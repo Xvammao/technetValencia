@@ -16,14 +16,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Backend.settings')
 application = get_wsgi_application()
 
 # Ejecutar collectstatic automáticamente en producción (por ejemplo Railway)
-run_collectstatic = os.environ.get('DJANGO_COLLECTSTATIC_ON_START', 'False') == 'True'
-if run_collectstatic:
-  try:
+try:
     from django.conf import settings
     from django.core.management import call_command
 
     if not settings.DEBUG:
-      call_command('collectstatic', interactive=False, verbosity=0)
-  except Exception:
+        # Si ya se ejecutó antes, vuelve a generar los estáticos sin problema
+        call_command('collectstatic', interactive=False, verbosity=0)
+except Exception:
     # Si falla, no impide que la app arranque; solo afecta a los estáticos
     pass
