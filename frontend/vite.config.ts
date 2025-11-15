@@ -16,4 +16,8 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    // Permitir cualquier host en modo preview (útil para dominios dinámicos como Railway)
+    allowedHosts: true,
+  },
 });
