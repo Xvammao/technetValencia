@@ -97,6 +97,11 @@ if env_cors_origins:
 else:
     CORS_ALLOWED_ORIGINS = default_cors_origins
 
+# CSRF trusted origins (necesario en producción con HTTPS y proxy como Railway)
+env_csrf_trusted = os.environ.get('CSRF_TRUSTED_ORIGINS')
+if env_csrf_trusted:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in env_csrf_trusted.split(',') if o.strip()]
+
 ROOT_URLCONF = 'Backend.urls'
 
 TEMPLATES = [
@@ -172,7 +177,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
