@@ -12,6 +12,7 @@ class Equipos(models.Model):
     id_equipos = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=150)
     numero_serie_equipo = models.CharField(unique=True, max_length=100)
+    tecnico = models.CharField(max_length=150)
 
     class Meta:
         managed = False

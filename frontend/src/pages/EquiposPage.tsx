@@ -6,6 +6,13 @@ interface Equipo {
   id_equipos: number;
   nombre: string;
   numero_serie_equipo: string;
+  tecnico: string;
+}
+
+interface Tecnico {
+  id_tecnico: number;
+  nombre_tecnico: string;
+  id_tecnico_empresa: string;
 }
 
 export const EquiposPage: React.FC = () => {
@@ -21,6 +28,8 @@ export const EquiposPage: React.FC = () => {
   const [importing, setImporting] = useState(false);
   const [search, setSearch] = useState('');
   const [seriesInstalaciones, setSeriesInstalaciones] = useState<string[]>([]);
+  const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
+  const [formTecnico, setFormTecnico] = useState('');
 
   const loadEquipos = async () => {
     setLoading(true);
@@ -34,6 +43,16 @@ export const EquiposPage: React.FC = () => {
       setError('No se pudieron cargar los equipos.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTecnicos = async () => {
+    try {
+      const response = await api.get('/tecnicos/');
+      const data = (response.data?.results ?? response.data) as Tecnico[];
+      setTecnicos(data);
+    } catch (err) {
+      console.error('Error cargando tecnicos para equipos', err);
     }
   };
 
@@ -79,6 +98,7 @@ export const EquiposPage: React.FC = () => {
       ID: equipo.id_equipos,
       Nombre: equipo.nombre,
       'N.º serie': equipo.numero_serie_equipo,
+      Tecnico: equipo.tecnico,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -113,6 +133,7 @@ export const EquiposPage: React.FC = () => {
           await api.post('/equipos/', {
             nombre,
             numero_serie_equipo: serie,
+            tecnico: '',
           });
         } catch (rowErr) {
           console.error('Error creando equipo desde Excel', rowErr, row);
@@ -132,12 +153,14 @@ export const EquiposPage: React.FC = () => {
   useEffect(() => {
     loadEquipos();
     loadSeriesInstalaciones();
+    loadTecnicos();
   }, []);
 
   const resetForm = () => {
     setEditing(null);
     setFormNombre('');
     setFormSerie('');
+    setFormTecnico('');
   };
 
   const startCreate = () => {
@@ -149,6 +172,7 @@ export const EquiposPage: React.FC = () => {
     setEditing(equipo);
     setFormNombre(equipo.nombre);
     setFormSerie(equipo.numero_serie_equipo);
+    setFormTecnico(equipo.tecnico || '');
     setShowForm(true);
   };
 
@@ -174,11 +198,13 @@ export const EquiposPage: React.FC = () => {
         await api.put(`/equipos/${editing.id_equipos}/`, {
           nombre: formNombre,
           numero_serie_equipo: formSerie,
+          tecnico: formTecnico,
         });
       } else {
         await api.post('/equipos/', {
           nombre: formNombre,
           numero_serie_equipo: formSerie,
+          tecnico: formTecnico,
         });
       }
 
@@ -245,6 +271,7 @@ export const EquiposPage: React.FC = () => {
                   <th className="px-4 py-2 text-left font-medium text-slate-300">ID</th>
                   <th className="px-4 py-2 text-left font-medium text-slate-300">Nombre</th>
                   <th className="px-4 py-2 text-left font-medium text-slate-300">N.º serie</th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-300">Tecnico</th>
                   <th className="px-4 py-2 text-right font-medium text-slate-300">Acciones</th>
                 </tr>
               </thead>
@@ -257,6 +284,7 @@ export const EquiposPage: React.FC = () => {
                     <td className="px-4 py-2 text-slate-100">{equipo.id_equipos}</td>
                     <td className="px-4 py-2 text-slate-100">{equipo.nombre}</td>
                     <td className="px-4 py-2 text-slate-100">{equipo.numero_serie_equipo}</td>
+                    <td className="px-4 py-2 text-slate-100">{equipo.tecnico}</td>
                     <td className="px-4 py-2 text-right space-x-2">
                       <button
                         type="button"
@@ -277,7 +305,7 @@ export const EquiposPage: React.FC = () => {
                 ))}
                 {equipos.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-4 text-center text-slate-400">
+                    <td colSpan={5} className="px-4 py-4 text-center text-slate-400">
                       No hay equipos registrados.
                     </td>
                   </tr>
@@ -306,6 +334,25 @@ export const EquiposPage: React.FC = () => {
                 className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 required
               />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="tecnico">
+                Tecnico
+              </label>
+              <select
+                id="tecnico"
+                value={formTecnico}
+                onChange={(e) => setFormTecnico(e.target.value)}
+                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="">Sin tecnico asignado</option>
+                {tecnicos.map((tecnico) => (
+                  <option key={tecnico.id_tecnico} value={tecnico.nombre_tecnico}>
+                    {tecnico.nombre_tecnico} ({tecnico.id_tecnico_empresa})
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="serie">
