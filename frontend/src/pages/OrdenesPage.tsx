@@ -23,6 +23,8 @@ export const OrdenesPage: React.FC = () => {
   const [valorEmp, setValorEmp] = useState('');
   const [editing, setEditing] = useState<Orden | null>(null);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   const loadOrdenes = async () => {
     setLoading(true);
@@ -48,6 +50,11 @@ export const OrdenesPage: React.FC = () => {
       (orden.puntos_orden ?? '').toString().toLowerCase().includes(term)
     );
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrdenes.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedOrdenes = filteredOrdenes.slice(startIndex, startIndex + pageSize);
 
   const handleExportExcel = () => {
     const rows = filteredOrdenes.map((orden) => ({
@@ -167,52 +174,105 @@ export const OrdenesPage: React.FC = () => {
           {loading && <p className="p-4 text-sm text-slate-300">Cargando órdenes...</p>}
           {error && !loading && <p className="p-4 text-sm text-red-400">{error}</p>}
           {!loading && !error && (
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-900/80">
-                <tr>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">ID</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">Tipo</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">Puntos</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">Valor técnico</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">Valor empresa</th>
-                  <th className="px-4 py-2 text-right font-medium text-slate-300">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrdenes.map((orden) => (
-                  <tr key={orden.id_orden} className="border-t border-slate-800 hover:bg-slate-900/70">
-                    <td className="px-4 py-2 text-slate-100">{orden.id_orden}</td>
-                    <td className="px-4 py-2 text-slate-100">{orden.tipo_orden}</td>
-                    <td className="px-4 py-2 text-slate-100">{orden.puntos_orden}</td>
-                    <td className="px-4 py-2 text-slate-100">{orden.valor_orden_tecnico ?? '-'}</td>
-                    <td className="px-4 py-2 text-slate-100">{orden.valor_orden_empresa ?? '-'}</td>
-                    <td className="px-4 py-2 text-right space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(orden)}
-                        className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(orden)}
-                        className="rounded border border-red-700 px-3 py-1 text-xs text-red-200 hover:bg-red-800/70"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {ordenes.length === 0 && (
+            <>
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-900/80">
                   <tr>
-                    <td colSpan={3} className="px-4 py-4 text-center text-slate-400">
-                      No hay órdenes registradas.
-                    </td>
+                    <th className="px-4 py-2 text-left font-medium text-slate-300">ID</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-300">Tipo</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-300">Puntos</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-300">Valor técnico</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-300">Valor empresa</th>
+                    <th className="px-4 py-2 text-right font-medium text-slate-300">Acciones</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {paginatedOrdenes.map((orden) => (
+                    <tr key={orden.id_orden} className="border-t border-slate-800 hover:bg-slate-900/70">
+                      <td className="px-4 py-2 text-slate-100">{orden.id_orden}</td>
+                      <td className="px-4 py-2 text-slate-100">{orden.tipo_orden}</td>
+                      <td className="px-4 py-2 text-slate-100">{orden.puntos_orden}</td>
+                      <td className="px-4 py-2 text-slate-100">{orden.valor_orden_tecnico ?? '-'}</td>
+                      <td className="px-4 py-2 text-slate-100">{orden.valor_orden_empresa ?? '-'}</td>
+                      <td className="px-4 py-2 text-right space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(orden)}
+                          className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(orden)}
+                          className="rounded border border-red-700 px-3 py-1 text-xs text-red-200 hover:bg-red-800/70"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {ordenes.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-4 text-center text-slate-400">
+                        No hay órdenes registradas.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              {filteredOrdenes.length > pageSize && (
+                <div className="flex items-center justify-center gap-1 border-t border-slate-800 bg-slate-900/60 px-3 py-2 text-xs">
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={safeCurrentPage === 1}
+                  >
+                    «
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={safeCurrentPage === 1}
+                  >
+                    ‹
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
+                        page === safeCurrentPage
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safeCurrentPage === totalPages}
+                  >
+                    ›
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={safeCurrentPage === totalPages}
+                  >
+                    »
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

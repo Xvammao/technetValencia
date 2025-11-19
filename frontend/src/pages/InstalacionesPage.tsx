@@ -44,6 +44,8 @@ export const InstalacionesPage: React.FC = () => {
   const [ordenes, setOrdenes] = useState<OrdenResumen[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   const loadInstalaciones = async () => {
     setLoading(true);
@@ -355,6 +357,17 @@ export const InstalacionesPage: React.FC = () => {
     );
   });
 
+  const totalGroups = Object.keys(
+    filteredInstalaciones.reduce<Record<string, true>>((acc, inst) => {
+      const baseOrden = inst.numero_de_orden.split('_DUPLI')[0];
+      acc[baseOrden] = true;
+      return acc;
+    }, {})
+  ).length;
+
+  const totalPages = Math.max(1, Math.ceil(totalGroups / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
   // Agrupar instalaciones filtradas por número de orden base (antes de sufijo _DUPLI)
   const groupedByOrden = filteredInstalaciones.reduce<Record<string, Instalacion[]>>((acc, inst) => {
     const baseOrden = inst.numero_de_orden.split('_DUPLI')[0];
@@ -362,6 +375,10 @@ export const InstalacionesPage: React.FC = () => {
     acc[baseOrden].push(inst);
     return acc;
   }, {});
+
+  const allGroupKeys = Object.keys(groupedByOrden).sort();
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedGroupKeys = allGroupKeys.slice(startIndex, startIndex + pageSize);
 
   const toggleGroup = (baseOrden: string) => {
     setExpandedGroups((prev) => ({
@@ -429,7 +446,8 @@ export const InstalacionesPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(groupedByOrden).map(([baseOrden, items]) => {
+                {paginatedGroupKeys.map((baseOrden) => {
+                  const items = groupedByOrden[baseOrden] ?? [];
                   const isOpen = expandedGroups[baseOrden] ?? false;
 
                   // Calcular suma de valores de la orden para técnico y empresa en este grupo
@@ -550,6 +568,57 @@ export const InstalacionesPage: React.FC = () => {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {!showForm && totalGroups > pageSize && (
+        <div className="flex items-center justify-center gap-1 border border-slate-800 border-t-0 bg-slate-900/60 px-3 py-2 text-xs">
+          <button
+            type="button"
+            className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+            onClick={() => setCurrentPage(1)}
+            disabled={safeCurrentPage === 1}
+          >
+            «
+          </button>
+          <button
+            type="button"
+            className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safeCurrentPage === 1}
+          >
+            ‹
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              type="button"
+              onClick={() => setCurrentPage(page)}
+              className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
+                page === safeCurrentPage
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safeCurrentPage === totalPages}
+          >
+            ›
+          </button>
+          <button
+            type="button"
+            className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={safeCurrentPage === totalPages}
+          >
+            »
+          </button>
         </div>
       )}
 

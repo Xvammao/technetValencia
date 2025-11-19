@@ -30,6 +30,8 @@ export const EquiposPage: React.FC = () => {
   const [seriesInstalaciones, setSeriesInstalaciones] = useState<string[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [formTecnico, setFormTecnico] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   const loadEquipos = async () => {
     setLoading(true);
@@ -92,6 +94,11 @@ export const EquiposPage: React.FC = () => {
       equipo.numero_serie_equipo.toLowerCase().includes(term)
     );
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredEquipos.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedEquipos = filteredEquipos.slice(startIndex, startIndex + pageSize);
 
   const handleExportExcel = () => {
     const rows = filteredEquipos.map((equipo) => ({
@@ -161,6 +168,7 @@ export const EquiposPage: React.FC = () => {
     setFormNombre('');
     setFormSerie('');
     setFormTecnico('');
+    setCurrentPage(1);
   };
 
   const startCreate = () => {
@@ -265,53 +273,106 @@ export const EquiposPage: React.FC = () => {
           {loading && <p className="p-4 text-sm text-slate-300">Cargando equipos...</p>}
           {error && !loading && <p className="p-4 text-sm text-red-400">{error}</p>}
           {!loading && !error && (
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-900/80">
-                <tr>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">ID</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">Nombre</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">N.º serie</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">Tecnico</th>
-                  <th className="px-4 py-2 text-right font-medium text-slate-300">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEquipos.map((equipo) => (
-                  <tr
-                    key={equipo.id_equipos}
-                    className="border-t border-slate-800 transition-colors hover:bg-slate-900/70"
-                  >
-                    <td className="px-4 py-2 text-slate-100">{equipo.id_equipos}</td>
-                    <td className="px-4 py-2 text-slate-100">{equipo.nombre}</td>
-                    <td className="px-4 py-2 text-slate-100">{equipo.numero_serie_equipo}</td>
-                    <td className="px-4 py-2 text-slate-100">{equipo.tecnico}</td>
-                    <td className="px-4 py-2 text-right space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(equipo)}
-                        className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(equipo)}
-                        className="rounded border border-red-700 px-3 py-1 text-xs text-red-200 hover:bg-red-800/70"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {equipos.length === 0 && (
+            <>
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-900/80">
                   <tr>
-                    <td colSpan={5} className="px-4 py-4 text-center text-slate-400">
-                      No hay equipos registrados.
-                    </td>
+                    <th className="px-4 py-2 text-left font-medium text-slate-300">ID</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-300">Nombre</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-300">N.º serie</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-300">Tecnico</th>
+                    <th className="px-4 py-2 text-right font-medium text-slate-300">Acciones</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {paginatedEquipos.map((equipo) => (
+                    <tr
+                      key={equipo.id_equipos}
+                      className="border-t border-slate-800 transition-colors hover:bg-slate-900/70"
+                    >
+                      <td className="px-4 py-2 text-slate-100">{equipo.id_equipos}</td>
+                      <td className="px-4 py-2 text-slate-100">{equipo.nombre}</td>
+                      <td className="px-4 py-2 text-slate-100">{equipo.numero_serie_equipo}</td>
+                      <td className="px-4 py-2 text-slate-100">{equipo.tecnico}</td>
+                      <td className="px-4 py-2 text-right space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(equipo)}
+                          className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(equipo)}
+                          className="rounded border border-red-700 px-3 py-1 text-xs text-red-200 hover:bg-red-800/70"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {equipos.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-4 text-center text-slate-400">
+                        No hay equipos registrados.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              {filteredEquipos.length > pageSize && (
+                <div className="flex items-center justify-center gap-1 border-t border-slate-800 bg-slate-900/60 px-3 py-2 text-xs">
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={safeCurrentPage === 1}
+                  >
+                    «
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={safeCurrentPage === 1}
+                  >
+                    ‹
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
+                        page === safeCurrentPage
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safeCurrentPage === totalPages}
+                  >
+                    ›
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={safeCurrentPage === totalPages}
+                  >
+                    »
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
