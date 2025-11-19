@@ -131,25 +131,33 @@ export const EquiposPage: React.FC = () => {
       let createdCount = 0;
 
       for (const row of rows) {
+        // Normalizar claves de la fila (encabezados de columnas) para hacer la búsqueda
+        const normalizedRow: Record<string, any> = {};
+        Object.entries(row).forEach(([key, value]) => {
+          const normalizedKey = key
+            .toString()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '') // quitar tildes
+            .toLowerCase()
+            .trim();
+          normalizedRow[normalizedKey] = value;
+        });
+
         const nombre = (
-          row['Nombre'] ??
-          row['NOMBRE'] ??
-          row['Nombre equipo'] ??
-          row['Producto'] ??
-          row['PRODUCTO'] ??
+          normalizedRow['nombre'] ??
+          normalizedRow['nombre equipo'] ??
+          normalizedRow['producto'] ??
           ''
         )
           .toString()
           .trim();
 
         const serie = (
-          row['Num Serie'] ??
-          row['NUM SERIE'] ??
-          row['Nº Serie'] ??
-          row['N° Serie'] ??
-          row['Numero de serie'] ??
-          row['Número de serie'] ??
-          row['SERIE'] ??
+          normalizedRow['num serie'] ??
+          normalizedRow['nº serie'] ??
+          normalizedRow['n° serie'] ??
+          normalizedRow['numero de serie'] ??
+          normalizedRow['serie'] ??
           ''
         )
           .toString()
@@ -163,7 +171,7 @@ export const EquiposPage: React.FC = () => {
           await api.post('/equipos/', {
             nombre,
             numero_serie_equipo: serie,
-            tecnico: '',
+            tecnico: 'stock',
           });
           createdCount += 1;
         } catch (rowErr) {
