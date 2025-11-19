@@ -14,6 +14,7 @@ export const TecnicosPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [editing, setEditing] = useState<Tecnico | null>(null);
   const [nombre, setNombre] = useState('');
   const [codigo, setCodigo] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -68,24 +69,62 @@ export const TecnicosPage: React.FC = () => {
     loadTecnicos();
   }, []);
 
+  const resetForm = () => {
+    setEditing(null);
+    setNombre('');
+    setCodigo('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
 
     try {
-      await api.post('/tecnicos/', {
-        nombre_tecnico: nombre,
-        id_tecnico_empresa: codigo,
-      });
-      setNombre('');
-      setCodigo('');
+      if (editing) {
+        await api.put(`/tecnicos/${editing.id_tecnico}/`, {
+          nombre_tecnico: nombre,
+          id_tecnico_empresa: codigo,
+        });
+      } else {
+        await api.post('/tecnicos/', {
+          nombre_tecnico: nombre,
+          id_tecnico_empresa: codigo,
+        });
+      }
+
+      resetForm();
+      setShowForm(false);
       await loadTecnicos();
     } catch (err) {
-      console.error('Error creando técnico', err);
-      setError('No se pudo crear el técnico.');
+      console.error('Error guardando técnico', err);
+      setError('No se pudo guardar el técnico.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startCreate = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const startEdit = (tec: Tecnico) => {
+    setEditing(tec);
+    setNombre(tec.nombre_tecnico);
+    setCodigo(tec.id_tecnico_empresa);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (tec: Tecnico) => {
+    if (!window.confirm(`¿Eliminar el técnico "${tec.nombre_tecnico}"?`)) return;
+
+    try {
+      await api.delete(`/tecnicos/${tec.id_tecnico}/`);
+      await loadTecnicos();
+    } catch (err) {
+      console.error('Error eliminando técnico', err);
+      setError('No se pudo eliminar el técnico.');
     }
   };
 
@@ -111,7 +150,7 @@ export const TecnicosPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(true)}
+              onClick={startCreate}
               className="rounded bg-primary-500 px-4 py-2 text-sm font-medium text-white shadow hover:bg-primary-400 transition-transform hover:-translate-y-0.5"
             >
               Nuevo técnico
@@ -132,6 +171,7 @@ export const TecnicosPage: React.FC = () => {
                     <th className="px-4 py-2 text-left font-medium text-slate-300">ID</th>
                     <th className="px-4 py-2 text-left font-medium text-slate-300">Nombre</th>
                     <th className="px-4 py-2 text-left font-medium text-slate-300">Código empresa</th>
+                    <th className="px-4 py-2 text-right font-medium text-slate-300">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -140,11 +180,27 @@ export const TecnicosPage: React.FC = () => {
                       <td className="px-4 py-2 text-slate-100">{tec.id_tecnico}</td>
                       <td className="px-4 py-2 text-slate-100">{tec.nombre_tecnico}</td>
                       <td className="px-4 py-2 text-slate-100">{tec.id_tecnico_empresa}</td>
+                      <td className="px-4 py-2 text-right space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(tec)}
+                          className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(tec)}
+                          className="rounded border border-red-700 px-3 py-1 text-xs text-red-200 hover:bg-red-800/70"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {tecnicos.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-4 py-4 text-center text-slate-400">
+                      <td colSpan={4} className="px-4 py-4 text-center text-slate-400">
                         No hay técnicos registrados.
                       </td>
                     </tr>
@@ -209,7 +265,9 @@ export const TecnicosPage: React.FC = () => {
 
       {showForm && (
         <div className="rounded border border-slate-800 bg-slate-950/70 p-4 shadow">
-          <h2 className="mb-3 text-lg font-medium">Nuevo técnico</h2>
+          <h2 className="mb-3 text-lg font-medium">
+            {editing ? 'Editar técnico' : 'Nuevo técnico'}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="nombre-tec">
@@ -243,7 +301,10 @@ export const TecnicosPage: React.FC = () => {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  resetForm();
+                  setShowForm(false);
+                }}
                 className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
               >
                 Volver a la lista
@@ -253,7 +314,7 @@ export const TecnicosPage: React.FC = () => {
                 disabled={saving}
                 className="rounded bg-primary-500 px-4 py-2 text-xs font-medium text-white shadow hover:bg-primary-400 disabled:opacity-60"
               >
-                {saving ? 'Guardando...' : 'Crear'}
+                {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
               </button>
             </div>
           </form>
