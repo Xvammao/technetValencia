@@ -128,9 +128,32 @@ export const EquiposPage: React.FC = () => {
       const sheet = workbook.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
 
+      let createdCount = 0;
+
       for (const row of rows) {
-        const nombre = (row['Nombre'] ?? '').toString().trim();
-        const serie = (row['Num Serie'] ?? '').toString().trim();
+        const nombre = (
+          row['Nombre'] ??
+          row['NOMBRE'] ??
+          row['Nombre equipo'] ??
+          row['Producto'] ??
+          row['PRODUCTO'] ??
+          ''
+        )
+          .toString()
+          .trim();
+
+        const serie = (
+          row['Num Serie'] ??
+          row['NUM SERIE'] ??
+          row['Nº Serie'] ??
+          row['N° Serie'] ??
+          row['Numero de serie'] ??
+          row['Número de serie'] ??
+          row['SERIE'] ??
+          ''
+        )
+          .toString()
+          .trim();
 
         if (!nombre || !serie) {
           continue;
@@ -142,6 +165,7 @@ export const EquiposPage: React.FC = () => {
             numero_serie_equipo: serie,
             tecnico: '',
           });
+          createdCount += 1;
         } catch (rowErr) {
           console.error('Error creando equipo desde Excel', rowErr, row);
         }
@@ -149,6 +173,12 @@ export const EquiposPage: React.FC = () => {
 
       await loadEquipos();
       e.target.value = '';
+
+      if (createdCount === 0) {
+        setError(
+          'No se creó ningún equipo desde el Excel. Verifica que las columnas de nombre y número de serie tengan encabezados válidos (por ejemplo: "Nombre", "Num Serie").'
+        );
+      }
     } catch (err) {
       console.error('Error importando Excel de equipos', err);
       setError('No se pudo importar el archivo Excel. Verifica el formato.');
