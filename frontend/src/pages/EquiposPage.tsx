@@ -91,7 +91,8 @@ export const EquiposPage: React.FC = () => {
     return (
       equipo.id_equipos.toString().includes(term) ||
       equipo.nombre.toLowerCase().includes(term) ||
-      equipo.numero_serie_equipo.toLowerCase().includes(term)
+      equipo.numero_serie_equipo.toLowerCase().includes(term) ||
+      equipo.tecnico.toLowerCase().includes(term)
     );
   });
 
@@ -273,7 +274,7 @@ export const EquiposPage: React.FC = () => {
           <div className="flex flex-1 flex-col gap-2 md:flex-row md:items-center md:justify-end">
             <input
               type="text"
-              placeholder="Buscar por ID, nombre o N.º serie..."
+              placeholder="Buscar por ID, nombre, N.º serie o técnico..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full max-w-xs rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
