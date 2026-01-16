@@ -277,16 +277,16 @@ export const EquiposPage: React.FC = () => {
               placeholder="Buscar por ID, nombre, N.º serie o técnico..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full max-w-xs rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full max-w-xs rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             <button
               type="button"
               onClick={handleExportExcel}
-              className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+              className="rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50"
             >
               Exportar Excel
             </button>
-            <label className="flex items-center gap-2 rounded border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800 cursor-pointer">
+            <label className="flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50 cursor-pointer">
               <span>{importing ? 'Importando...' : 'Importar Excel'}</span>
               <input
                 type="file"
@@ -308,43 +308,43 @@ export const EquiposPage: React.FC = () => {
       </div>
 
       {!showForm && (
-        <div className="overflow-hidden rounded border border-slate-800 bg-slate-950/60 shadow animate-fade-in">
-          {loading && <p className="p-4 text-sm text-slate-300">Cargando equipos...</p>}
-          {error && !loading && <p className="p-4 text-sm text-red-400">{error}</p>}
+        <div className="overflow-hidden rounded border border-slate-200 bg-white shadow animate-fade-in">
+          {loading && <p className="p-4 text-sm text-slate-500">Cargando equipos...</p>}
+          {error && !loading && <p className="p-4 text-sm text-red-500">{error}</p>}
           {!loading && !error && (
             <>
               <table className="min-w-full text-sm">
-                <thead className="bg-slate-900/80">
+                <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-4 py-2 text-left font-medium text-slate-300">ID</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-300">Nombre</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-300">N.º serie</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-300">Tecnico</th>
-                    <th className="px-4 py-2 text-right font-medium text-slate-300">Acciones</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">ID</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">Nombre</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">N.º serie</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">Tecnico</th>
+                    <th className="px-4 py-2 text-right font-medium text-slate-700">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedEquipos.map((equipo) => (
                     <tr
                       key={equipo.id_equipos}
-                      className="border-t border-slate-800 transition-colors hover:bg-slate-900/70"
+                      className="border-t border-slate-200 transition-colors hover:bg-slate-50"
                     >
-                      <td className="px-4 py-2 text-slate-100">{equipo.id_equipos}</td>
-                      <td className="px-4 py-2 text-slate-100">{equipo.nombre}</td>
-                      <td className="px-4 py-2 text-slate-100">{equipo.numero_serie_equipo}</td>
-                      <td className="px-4 py-2 text-slate-100">{equipo.tecnico}</td>
+                      <td className="px-4 py-2 text-slate-800">{equipo.id_equipos}</td>
+                      <td className="px-4 py-2 text-slate-800">{equipo.nombre}</td>
+                      <td className="px-4 py-2 text-slate-800">{equipo.numero_serie_equipo}</td>
+                      <td className="px-4 py-2 text-slate-800">{equipo.tecnico}</td>
                       <td className="px-4 py-2 text-right space-x-2">
                         <button
                           type="button"
                           onClick={() => startEdit(equipo)}
-                          className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                          className="rounded border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-50"
                         >
                           Editar
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDelete(equipo)}
-                          className="rounded border border-red-700 px-3 py-1 text-xs text-red-200 hover:bg-red-800/70"
+                          className="rounded border border-red-200 px-3 py-1 text-xs text-red-700 hover:bg-red-50"
                         >
                           Eliminar
                         </button>
@@ -353,7 +353,7 @@ export const EquiposPage: React.FC = () => {
                   ))}
                   {equipos.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-4 text-center text-slate-400">
+                      <td colSpan={5} className="px-4 py-4 text-center text-slate-500">
                         No hay equipos registrados.
                       </td>
                     </tr>
@@ -362,10 +362,10 @@ export const EquiposPage: React.FC = () => {
               </table>
 
               {filteredEquipos.length > pageSize && (
-                <div className="flex items-center justify-center gap-1 border-t border-slate-800 bg-slate-900/60 px-3 py-2 text-xs">
+                <div className="flex items-center justify-center gap-1 border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs">
                   <button
                     type="button"
-                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    className="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
                     onClick={() => setCurrentPage(1)}
                     disabled={safeCurrentPage === 1}
                   >
@@ -387,7 +387,7 @@ export const EquiposPage: React.FC = () => {
                       className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
                         page === safeCurrentPage
                           ? 'bg-primary-500 text-white'
-                          : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
+                          : 'bg-white text-slate-700 hover:bg-slate-100'
                       }`}
                     >
                       {page}
@@ -417,13 +417,13 @@ export const EquiposPage: React.FC = () => {
       )}
 
       {showForm && (
-        <div className="rounded border border-slate-800 bg-slate-950/70 p-4 shadow animate-fade-in">
+        <div className="rounded border border-slate-200 bg-white p-4 shadow animate-fade-in">
           <h2 className="mb-3 text-lg font-medium">
             {editing ? 'Editar equipo' : 'Nuevo equipo'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="nombre">
+              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="nombre">
                 Nombre
               </label>
               <input
@@ -431,13 +431,13 @@ export const EquiposPage: React.FC = () => {
                 type="text"
                 value={formNombre}
                 onChange={(e) => setFormNombre(e.target.value)}
-                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 required
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="tecnico">
+              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="tecnico">
                 Tecnico
               </label>
               <select
@@ -455,7 +455,7 @@ export const EquiposPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="serie">
+              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="serie">
                 Número de serie
               </label>
               <input

@@ -398,17 +398,17 @@ export const InstalacionesPage: React.FC = () => {
               placeholder="Buscar por N.º serie, N.º orden, técnico o tipo orden..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full max-w-xs rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full max-w-xs rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleExportExcel}
-                className="rounded border border-slate-700 px-3 py-2 text-xs text-slate-200 hover:bg-slate-800"
+                className="rounded border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
               >
                 Exportar Excel
               </button>
-              <label className="inline-flex cursor-pointer items-center justify-center rounded border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-100 shadow hover:bg-slate-800">
+              <label className="inline-flex cursor-pointer items-center justify-center rounded border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow hover:bg-slate-50">
                 <span>{importing ? 'Importando...' : 'Importar Excel'}</span>
                 <input
                   type="file"
@@ -431,18 +431,18 @@ export const InstalacionesPage: React.FC = () => {
       </div>
 
       {!showForm && (
-        <div className="overflow-hidden rounded border border-slate-800 bg-slate-950/60 shadow">
-          {loading && <p className="p-4 text-sm text-slate-300">Cargando instalaciones...</p>}
-          {error && !loading && <p className="p-4 text-sm text-red-400">{error}</p>}
+        <div className="overflow-hidden rounded border border-slate-200 bg-white shadow">
+          {loading && <p className="p-4 text-sm text-slate-500">Cargando instalaciones...</p>}
+          {error && !loading && <p className="p-4 text-sm text-red-500">{error}</p>}
           {!loading && !error && (
             <table className="min-w-full text-xs md:text-sm">
-              <thead className="bg-slate-900/80">
+              <thead className="bg-slate-100">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">N.º serie equipo</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">N.º orden</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">Nombre técnico</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-300">Tipo orden</th>
-                  <th className="px-4 py-2 text-right font-medium text-slate-300">Acciones</th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">N.º serie equipo</th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">N.º orden</th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">Nombre técnico</th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">Tipo orden</th>
+                  <th className="px-4 py-2 text-right font-medium text-slate-700">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -484,15 +484,15 @@ export const InstalacionesPage: React.FC = () => {
                   return (
                     <React.Fragment key={baseOrden}>
                       <tr
-                        className="bg-slate-900/70 cursor-pointer hover:bg-slate-800/80"
+                        className="bg-slate-50 cursor-pointer hover:bg-slate-100"
                         onClick={() => toggleGroup(baseOrden)}
                       >
-                        <td colSpan={5} className="px-4 py-2 text-xs font-semibold text-primary-300">
-                          <span className="mr-2 text-slate-200">{isOpen ? '▾' : '▸'}</span>
+                        <td colSpan={5} className="px-4 py-2 text-xs font-semibold text-primary-700">
+                          <span className="mr-2 text-slate-600">{isOpen ? '▾' : '▸'}</span>
                           N.º orden: {baseOrden} ({items.length} instalación
                           {items.length > 1 ? 'es' : ''})
                           {totalTec > 0 || totalEmp > 0 ? (
-                            <span className="ml-4 text-[11px] text-emerald-300">
+                            <span className="ml-4 text-[11px] text-emerald-600">
                               Total técnico: ${formatMonto(totalTec)} | Total empresa: ${formatMonto(totalEmp)}
                             </span>
                           ) : null}
@@ -506,37 +506,37 @@ export const InstalacionesPage: React.FC = () => {
 
                           return (
                             <React.Fragment key={inst.id_instalaciones}>
-                              <tr className="border-t border-slate-800 hover:bg-slate-900/70">
-                                <td className="px-4 py-2 text-slate-100">{inst.numero_serie_equipo}</td>
-                                <td className="px-4 py-2 text-slate-100">{inst.numero_de_orden}</td>
-                                <td className="px-4 py-2 text-slate-100">{inst.nombre_tecnico}</td>
-                                <td className="px-4 py-2 text-slate-100">{inst.tipo_orden ?? '-'}</td>
+                              <tr className="border-t border-slate-200 hover:bg-slate-50">
+                                <td className="px-4 py-2 text-slate-800">{inst.numero_serie_equipo}</td>
+                                <td className="px-4 py-2 text-slate-800">{inst.numero_de_orden}</td>
+                                <td className="px-4 py-2 text-slate-800">{inst.nombre_tecnico}</td>
+                                <td className="px-4 py-2 text-slate-800">{inst.tipo_orden ?? '-'}</td>
                                 <td className="px-4 py-2 text-right space-x-2">
                                   <button
                                     type="button"
                                     onClick={() => startEdit(inst)}
-                                    className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                                    className="rounded border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-50"
                                   >
                                     Editar
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => handleDelete(inst)}
-                                    className="rounded border border-red-700 px-3 py-1 text-xs text-red-200 hover:bg-red-800/70"
+                                    className="rounded border border-red-200 px-3 py-1 text-xs text-red-700 hover:bg-red-50"
                                   >
                                     Eliminar
                                   </button>
                                 </td>
                               </tr>
                               {ordenDetalle && (
-                                <tr className="border-t border-slate-900/60 bg-slate-950/40">
-                                  <td colSpan={5} className="px-6 py-2 text-xs text-slate-300">
+                                <tr className="border-t border-slate-200 bg-slate-50">
+                                  <td colSpan={5} className="px-6 py-2 text-xs text-slate-700">
                                     <div className="grid gap-2 md:grid-cols-2">
                                       <div>
-                                        <span className="block font-medium text-slate-200">
+                                        <span className="block font-medium text-slate-800">
                                           Valor de la orden para el técnico
                                         </span>
-                                        <span className="block whitespace-pre-wrap text-slate-300">
+                                        <span className="block whitespace-pre-wrap text-slate-700">
                                           {ordenDetalle.valor_orden_tecnico ?? ''}
                                         </span>
                                       </div>
@@ -560,7 +560,7 @@ export const InstalacionesPage: React.FC = () => {
                 })}
                 {instalaciones.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-4 text-center text-slate-400">
+                    <td colSpan={8} className="px-4 py-4 text-center text-slate-500">
                       No hay instalaciones registradas.
                     </td>
                   </tr>
@@ -572,10 +572,10 @@ export const InstalacionesPage: React.FC = () => {
       )}
 
       {!showForm && totalGroups > pageSize && (
-        <div className="flex items-center justify-center gap-1 border border-slate-800 border-t-0 bg-slate-900/60 px-3 py-2 text-xs">
+        <div className="flex items-center justify-center gap-1 border border-slate-200 border-t-0 bg-slate-50 px-3 py-2 text-xs">
           <button
             type="button"
-            className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+            className="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
             onClick={() => setCurrentPage(1)}
             disabled={safeCurrentPage === 1}
           >
@@ -597,7 +597,7 @@ export const InstalacionesPage: React.FC = () => {
               className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
                 page === safeCurrentPage
                   ? 'bg-primary-500 text-white'
-                  : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
+                  : 'bg-white text-slate-700 hover:bg-slate-100'
               }`}
             >
               {page}
@@ -623,11 +623,11 @@ export const InstalacionesPage: React.FC = () => {
       )}
 
       {showForm && (
-        <div className="rounded border border-slate-800 bg-slate-950/70 p-4 shadow">
+        <div className="rounded border border-slate-200 bg-white p-4 shadow">
           <h2 className="mb-3 text-lg font-medium">{editing ? 'Editar instalación' : 'Nueva instalación'}</h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="serie-inst">
+              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="serie-inst">
                 Número de serie del equipo
               </label>
               <input
@@ -635,14 +635,14 @@ export const InstalacionesPage: React.FC = () => {
                 type="text"
                 value={serie}
                 onChange={(e) => setSerie(e.target.value)}
-                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 required
               />
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="fecha-cierre">
+                <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="fecha-cierre">
                   Fecha de cierre (opcional)
                 </label>
                 <input
@@ -650,11 +650,11 @@ export const InstalacionesPage: React.FC = () => {
                   type="date"
                   value={fechaCierre}
                   onChange={(e) => setFechaCierre(e.target.value)}
-                  className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="id-tec-emp">
+                <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="id-tec-emp">
                   ID técnico empresa
                 </label>
                 <input
@@ -670,7 +670,7 @@ export const InstalacionesPage: React.FC = () => {
 
             <div className="grid gap-3 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="nombre-tec">
+                <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="nombre-tec">
                   Nombre técnico
                 </label>
                 <input
@@ -683,7 +683,7 @@ export const InstalacionesPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="tipo-inst">
+                <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="tipo-inst">
                   Tipo (opcional)
                 </label>
                 <input
@@ -697,7 +697,7 @@ export const InstalacionesPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="tipo-orden-inst">
+              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="tipo-orden-inst">
                 Tipo de orden (opcional)
               </label>
               <select
@@ -718,14 +718,14 @@ export const InstalacionesPage: React.FC = () => {
             {selectedOrden && (
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-300">
+                  <label className="mb-1 block text-xs font-medium text-slate-700">
                     Valor de la orden para el técnico
                   </label>
                   <textarea
                     value={selectedOrden.valor_orden_tecnico ?? ''}
                     readOnly
                     rows={2}
-                    className="w-full cursor-default rounded border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-300"
+                    className="w-full cursor-default rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
                   />
                 </div>
                 <div>
@@ -743,7 +743,7 @@ export const InstalacionesPage: React.FC = () => {
             )}
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="desc-inst">
+              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="desc-inst">
                 Descripción (opcional)
               </label>
               <textarea
@@ -755,7 +755,7 @@ export const InstalacionesPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="orden-inst">
+              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="orden-inst">
                 Número de orden
               </label>
               <input

@@ -122,12 +122,12 @@ export const OperadoresPage: React.FC = () => {
               placeholder="Buscar por ID o nombre..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full max-w-xs rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full max-w-xs rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             <button
               type="button"
               onClick={handleExportExcel}
-              className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+              className="rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50"
             >
               Exportar Excel
             </button>
@@ -143,36 +143,36 @@ export const OperadoresPage: React.FC = () => {
       </div>
 
       {!showForm && (
-        <div className="overflow-hidden rounded border border-slate-800 bg-slate-950/60 shadow">
-          {loading && <p className="p-4 text-sm text-slate-300">Cargando operadores...</p>}
-          {error && !loading && <p className="p-4 text-sm text-red-400">{error}</p>}
+        <div className="overflow-hidden rounded border border-slate-200 bg-white shadow">
+          {loading && <p className="p-4 text-sm text-slate-500">Cargando operadores...</p>}
+          {error && !loading && <p className="p-4 text-sm text-red-500">{error}</p>}
           {!loading && !error && (
             <>
               <table className="min-w-full text-sm">
-                <thead className="bg-slate-900/80">
+                <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-4 py-2 text-left font-medium text-slate-300">ID</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-300">Nombre</th>
-                    <th className="px-4 py-2 text-right font-medium text-slate-300">Acciones</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">ID</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">Nombre</th>
+                    <th className="px-4 py-2 text-right font-medium text-slate-700">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedOperadores.map((op) => (
-                    <tr key={op.id_operador} className="border-t border-slate-800 hover:bg-slate-900/70">
-                      <td className="px-4 py-2 text-slate-100">{op.id_operador}</td>
-                      <td className="px-4 py-2 text-slate-100">{op.nombre_operador}</td>
+                    <tr key={op.id_operador} className="border-t border-slate-200 hover:bg-slate-50">
+                      <td className="px-4 py-2 text-slate-800">{op.id_operador}</td>
+                      <td className="px-4 py-2 text-slate-800">{op.nombre_operador}</td>
                       <td className="px-4 py-2 text-right space-x-2">
                         <button
                           type="button"
                           onClick={() => startEdit(op)}
-                          className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                          className="rounded border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-50"
                         >
                           Editar
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDelete(op)}
-                          className="rounded border border-red-700 px-3 py-1 text-xs text-red-200 hover:bg-red-800/70"
+                          className="rounded border border-red-200 px-3 py-1 text-xs text-red-700 hover:bg-red-50"
                         >
                           Eliminar
                         </button>
@@ -181,7 +181,7 @@ export const OperadoresPage: React.FC = () => {
                   ))}
                   {operadores.length === 0 && (
                     <tr>
-                      <td colSpan={2} className="px-4 py-4 text-center text-slate-400">
+                      <td colSpan={2} className="px-4 py-4 text-center text-slate-500">
                         No hay operadores registrados.
                       </td>
                     </tr>
@@ -190,10 +190,10 @@ export const OperadoresPage: React.FC = () => {
               </table>
 
               {filteredOperadores.length > pageSize && (
-                <div className="flex items-center justify-center gap-1 border-t border-slate-800 bg-slate-900/60 px-3 py-2 text-xs">
+                <div className="flex items-center justify-center gap-1 border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs">
                   <button
                     type="button"
-                    className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+                    className="rounded px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
                     onClick={() => setCurrentPage(1)}
                     disabled={safeCurrentPage === 1}
                   >
@@ -215,7 +215,7 @@ export const OperadoresPage: React.FC = () => {
                       className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
                         page === safeCurrentPage
                           ? 'bg-primary-500 text-white'
-                          : 'bg-slate-900 text-slate-200 hover:bg-slate-800'
+                          : 'bg-white text-slate-700 hover:bg-slate-100'
                       }`}
                     >
                       {page}
@@ -245,11 +245,11 @@ export const OperadoresPage: React.FC = () => {
       )}
 
       {showForm && (
-        <div className="rounded border border-slate-800 bg-slate-950/70 p-4 shadow">
+        <div className="rounded border border-slate-200 bg-white p-4 shadow">
           <h2 className="mb-3 text-lg font-medium">{editing ? 'Editar operador' : 'Nuevo operador'}</h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-300" htmlFor="nombre-op">
+              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="nombre-op">
                 Nombre del operador
               </label>
               <input
@@ -257,12 +257,12 @@ export const OperadoresPage: React.FC = () => {
                 type="text"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 required
               />
             </div>
 
-            {error && <p className="text-xs text-red-400">{error}</p>}
+            {error && <p className="text-xs text-red-500">{error}</p>}
 
             <div className="flex justify-end gap-2 pt-2">
               <button
