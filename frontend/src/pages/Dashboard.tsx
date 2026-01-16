@@ -110,13 +110,13 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="p-4 space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-50">Dashboard</h1>
-        <p className="text-sm text-slate-400">
+        <h1 className="text-2xl font-semibold text-slate-800">Dashboard</h1>
+        <p className="text-sm text-slate-500">
           Resumen general del estado de equipos, instalaciones, órdenes y personal técnico.
         </p>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <MetricCard
@@ -153,17 +153,17 @@ export const Dashboard: React.FC = () => {
 
       {!loading && (
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-lg border border-emerald-700/60 bg-emerald-950/40 p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-emerald-300">
+          <div className="rounded-lg border border-emerald-100 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-emerald-600">
               Ganancia total Technet
             </p>
-            <p className="mt-1 text-2xl font-semibold text-emerald-100">
+            <p className="mt-1 text-2xl font-semibold text-emerald-700">
               ${totalEmpresa.toLocaleString('es-ES', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
             </p>
-            <p className="mt-1 text-[11px] text-emerald-200/80">
+            <p className="mt-1 text-[11px] text-emerald-600/80">
               Suma de todos los valores de la orden para la empresa asociados a las instalaciones
               registradas.
             </p>
@@ -172,30 +172,30 @@ export const Dashboard: React.FC = () => {
       )}
 
       {!loading && metrics && (
-        <div className="rounded border border-slate-800 bg-slate-950/70 p-4 shadow-sm">
-          <h2 className="mb-2 text-sm font-semibold text-slate-200">Resumen rápido</h2>
-          <p className="text-xs text-slate-400">
-            Actualmente se gestionan <span className="font-semibold text-slate-100">{metrics.equipos}</span> equipos,
-            distribuidos en <span className="font-semibold text-slate-100">{metrics.instalaciones}</span> instalaciones,
-            atendidos por <span className="font-semibold text-slate-100">{metrics.tecnicos}</span> técnicos y
-            coordinados con <span className="font-semibold text-slate-100">{metrics.operadores}</span> operadores.
+        <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="mb-2 text-sm font-semibold text-slate-800">Resumen rápido</h2>
+          <p className="text-xs text-slate-600">
+            Actualmente se gestionan <span className="font-semibold text-slate-900">{metrics.equipos}</span> equipos,
+            distribuidos en <span className="font-semibold text-slate-900">{metrics.instalaciones}</span> instalaciones,
+            atendidos por <span className="font-semibold text-slate-900">{metrics.tecnicos}</span> técnicos y
+            coordinados con <span className="font-semibold text-slate-900">{metrics.operadores}</span> operadores.
           </p>
         </div>
       )}
 
       {!loading && tecnicoTotals.length > 0 && (
-        <div className="rounded border border-slate-800 bg-slate-950/70 p-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-200">
+        <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-slate-800">
             Total técnico por técnico (Top 10)
           </h2>
           <div className="grid gap-2 md:grid-cols-2">
             {tecnicoTotals.map((tec) => (
               <div
                 key={tec.nombre}
-                className="flex items-center justify-between rounded border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs"
+                className="flex items-center justify-between rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
               >
-                <span className="font-medium text-slate-100 mr-3 line-clamp-1">{tec.nombre}</span>
-                <span className="text-emerald-300 font-semibold whitespace-nowrap">
+                <span className="font-medium text-slate-800 mr-3 line-clamp-1">{tec.nombre}</span>
+                <span className="text-emerald-600 font-semibold whitespace-nowrap">
                   ${tec.totalTec.toLocaleString('es-ES', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -220,13 +220,13 @@ interface MetricCardProps {
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, loading, accent }) => {
   return (
     <div
-      className={`relative overflow-hidden rounded-lg border border-slate-800 bg-slate-950/80 p-4 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg`}
+      className={`relative overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg`}
     >
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br opacity-80 ${accent}`} />
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br opacity-40 ${accent}`} />
       <div className="relative space-y-1">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{title}</p>
-        <p className="text-2xl font-semibold text-slate-50">
-          {loading ? <span className="text-slate-500">...</span> : value ?? 0}
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</p>
+        <p className="text-2xl font-semibold text-slate-800">
+          {loading ? <span className="text-slate-400">...</span> : value ?? 0}
         </p>
         {!loading && (
           <p className="text-[11px] text-slate-500">Datos en tiempo real desde el sistema.</p>
