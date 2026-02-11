@@ -9,20 +9,20 @@ export function Topbar() {
   };
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-slate-800 bg-slate-950/70 px-6 backdrop-blur">
+    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
       <div>
-        <h1 className="text-lg font-semibold text-slate-50">Panel de Gestión</h1>
-        <p className="text-xs text-slate-400">Supervisión centralizada de equipos e instalaciones</p>
+        <h1 className="text-lg font-semibold text-slate-900">Panel de Gestión</h1>
+        <p className="text-xs text-slate-500">Supervisión centralizada de equipos e instalaciones</p>
       </div>
       <div className="flex items-center gap-3">
         <div className="text-right text-xs">
-          <p className="font-medium text-slate-100">Operador</p>
-          <p className="text-slate-400">Sesión activa</p>
+          <p className="font-medium text-slate-800">Operador</p>
+          <p className="text-slate-500">Sesión activa</p>
         </div>
         <button
           type="button"
           onClick={handleLogout}
-          className="rounded border border-slate-700 px-3 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-white"
+          className="rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
         >
           Salir
         </button>

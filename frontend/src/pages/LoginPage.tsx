@@ -50,32 +50,32 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 bg-gradient-to-br from-slate-900 via-slate-950 to-sky-950 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950/90 p-6 shadow-xl shadow-sky-900/20 backdrop-blur">
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/80">
         <div className="mb-6 flex items-center justify-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600 text-lg font-bold text-white shadow-lg shadow-sky-900/40">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500 text-lg font-bold text-white shadow-lg shadow-primary-200/80">
             TN
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-slate-50">Technet</h1>
-            <p className="text-[11px] uppercase tracking-wide text-slate-400">Panel de gestión de telecomunicaciones</p>
+            <h1 className="text-lg font-semibold text-slate-900">Technet</h1>
+            <p className="text-[11px] uppercase tracking-wide text-slate-500">Panel de gestión de telecomunicaciones</p>
           </div>
         </div>
 
-        <h2 className="mb-2 text-base font-semibold text-slate-100">Iniciar sesión</h2>
-        <p className="mb-4 text-xs text-slate-400">
+        <h2 className="mb-2 text-base font-semibold text-slate-900">Iniciar sesión</h2>
+        <p className="mb-4 text-xs text-slate-600">
           Introduce tus credenciales para acceder al panel de control.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-slate-300" htmlFor="username">
+            <label className="block text-xs font-medium text-slate-700" htmlFor="username">
               Usuario
             </label>
             <input
               id="username"
               type="text"
-              className="w-full rounded-md border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 shadow-inner shadow-slate-950 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
@@ -83,13 +83,13 @@ export const LoginPage: React.FC = () => {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-slate-300" htmlFor="password">
+            <label className="block text-xs font-medium text-slate-700" htmlFor="password">
               Contraseña
             </label>
             <input
               id="password"
               type="password"
-              className="w-full rounded-md border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 shadow-inner shadow-slate-950 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -98,7 +98,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {error && (
-            <div className="rounded border border-red-700/60 bg-red-950/40 px-3 py-2 text-xs text-red-200">
+            <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
               {error}
             </div>
           )}
@@ -107,7 +107,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex w-full items-center justify-center rounded-md bg-sky-600 px-4 py-2.5 text-sm font-medium text-slate-50 shadow-md shadow-sky-900/40 transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-primary-200/80 transition-colors hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? 'Entrando...' : 'Acceder al panel'}
             </button>
