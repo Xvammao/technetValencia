@@ -281,32 +281,6 @@ export const InstalacionesPage: React.FC = () => {
     setError(null);
 
     try {
-      // Si estamos editando, validar que el número de serie exista en el inventario de equipos
-      if (editing && serie.trim()) {
-        try {
-          const equiposRes = await api.get('/equipos/');
-          const equiposData = (equiposRes.data?.results ?? equiposRes.data) as Array<{
-            id_equipos: number;
-            nombre: string;
-            numero_serie_equipo: string;
-          }>;
-
-          const existeEnEquipos = equiposData.some(
-            (eq) => eq.numero_serie_equipo?.trim() === serie.trim()
-          );
-
-          if (!existeEnEquipos) {
-            window.alert(
-              `No se puede actualizar la instalación: el equipo con N.º de serie "${serie.trim()}" no existe en el inventario de equipos.`
-            );
-            setSaving(false);
-            return;
-          }
-        } catch (equipErr) {
-          console.error('Error validando número de serie en equipos antes de actualizar instalación', equipErr);
-        }
-      }
-
       const payload = {
         numero_serie_equipo: serie,
         numero_de_orden: orden,
