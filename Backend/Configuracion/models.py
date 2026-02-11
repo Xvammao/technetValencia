@@ -13,6 +13,7 @@ class Equipos(models.Model):
     nombre = models.CharField(max_length=150)
     numero_serie_equipo = models.CharField(unique=True, max_length=100)
     tecnico = models.CharField(max_length=150)
+    operador = models.ForeignKey('Operador', models.DO_NOTHING, db_column='operador', blank=True, null=True)
 
     class Meta:
         managed = False

@@ -7,12 +7,18 @@ interface Equipo {
   nombre: string;
   numero_serie_equipo: string;
   tecnico: string;
+  operador: number | null;
 }
 
 interface Tecnico {
   id_tecnico: number;
   nombre_tecnico: string;
   id_tecnico_empresa: string;
+}
+
+interface Operador {
+  id_operador: number;
+  nombre_operador: string;
 }
 
 export const EquiposPage: React.FC = () => {
@@ -30,6 +36,8 @@ export const EquiposPage: React.FC = () => {
   const [seriesInstalaciones, setSeriesInstalaciones] = useState<string[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [formTecnico, setFormTecnico] = useState('');
+  const [operadores, setOperadores] = useState<Operador[]>([]);
+  const [formOperador, setFormOperador] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
@@ -45,6 +53,16 @@ export const EquiposPage: React.FC = () => {
       setError('No se pudieron cargar los equipos.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOperadores = async () => {
+    try {
+      const response = await api.get('/operador/');
+      const data = (response.data?.results ?? response.data) as Operador[];
+      setOperadores(data);
+    } catch (err) {
+      console.error('Error cargando operadores para equipos', err);
     }
   };
 
@@ -200,6 +218,7 @@ export const EquiposPage: React.FC = () => {
     loadEquipos();
     loadSeriesInstalaciones();
     loadTecnicos();
+    loadOperadores();
   }, []);
 
   const resetForm = () => {
@@ -207,6 +226,7 @@ export const EquiposPage: React.FC = () => {
     setFormNombre('');
     setFormSerie('');
     setFormTecnico('');
+    setFormOperador('');
     setCurrentPage(1);
   };
 
@@ -220,6 +240,7 @@ export const EquiposPage: React.FC = () => {
     setFormNombre(equipo.nombre);
     setFormSerie(equipo.numero_serie_equipo);
     setFormTecnico(equipo.tecnico || '');
+    setFormOperador(equipo.operador ? String(equipo.operador) : '');
     setShowForm(true);
   };
 
@@ -246,12 +267,14 @@ export const EquiposPage: React.FC = () => {
           nombre: formNombre,
           numero_serie_equipo: formSerie,
           tecnico: formTecnico,
+          operador: formOperador || null,
         });
       } else {
         await api.post('/equipos/', {
           nombre: formNombre,
           numero_serie_equipo: formSerie,
           tecnico: formTecnico,
+          operador: formOperador || null,
         });
       }
 
@@ -320,6 +343,7 @@ export const EquiposPage: React.FC = () => {
                     <th className="px-4 py-2 text-left font-medium text-slate-700">Nombre</th>
                     <th className="px-4 py-2 text-left font-medium text-slate-700">N.º serie</th>
                     <th className="px-4 py-2 text-left font-medium text-slate-700">Tecnico</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">Operador</th>
                     <th className="px-4 py-2 text-right font-medium text-slate-700">Acciones</th>
                   </tr>
                 </thead>
@@ -333,6 +357,12 @@ export const EquiposPage: React.FC = () => {
                       <td className="px-4 py-2 text-slate-800">{equipo.nombre}</td>
                       <td className="px-4 py-2 text-slate-800">{equipo.numero_serie_equipo}</td>
                       <td className="px-4 py-2 text-slate-800">{equipo.tecnico}</td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {(() => {
+                          const op = operadores.find((o) => o.id_operador === equipo.operador);
+                          return op ? op.nombre_operador : '';
+                        })()}
+                      </td>
                       <td className="px-4 py-2 text-right space-x-2">
                         <button
                           type="button"
@@ -450,6 +480,25 @@ export const EquiposPage: React.FC = () => {
                 {tecnicos.map((tecnico) => (
                   <option key={tecnico.id_tecnico} value={tecnico.nombre_tecnico}>
                     {tecnico.nombre_tecnico} ({tecnico.id_tecnico_empresa})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="operador">
+                Operador
+              </label>
+              <select
+                id="operador"
+                value={formOperador}
+                onChange={(e) => setFormOperador(e.target.value)}
+                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="">Sin operador asignado</option>
+                {operadores.map((operador) => (
+                  <option key={operador.id_operador} value={operador.id_operador}>
+                    {operador.nombre_operador}
                   </option>
                 ))}
               </select>
