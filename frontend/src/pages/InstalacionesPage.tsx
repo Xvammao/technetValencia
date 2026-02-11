@@ -144,6 +144,30 @@ export const InstalacionesPage: React.FC = () => {
       const sheet = workbook.Sheets[sheetName];
       const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
+      // Cargar inventario de equipos para validar / eliminar según N.º de serie
+      let equiposPorSerie = new Map<string, { id_equipos: number; nombre: string }>();
+      try {
+        const equiposRes = await api.get('/equipos/');
+        const equiposData = (equiposRes.data?.results ?? equiposRes.data) as Array<{
+          id_equipos: number;
+          nombre: string;
+          numero_serie_equipo: string;
+        }>;
+        equiposData.forEach((eq) => {
+          if (eq.numero_serie_equipo) {
+            equiposPorSerie.set(eq.numero_serie_equipo.trim(), {
+              id_equipos: eq.id_equipos,
+              nombre: eq.nombre,
+            });
+          }
+        });
+      } catch (equipErr) {
+        console.error('No se pudo cargar el inventario de equipos para validar durante la importación', equipErr);
+        equiposPorSerie = new Map();
+      }
+
+      const ordenesConEquipoInexistente: string[] = [];
+
       // Contador de duplicados por número de orden original
       const orderCounts: Record<string, number> = {};
       // Contador de duplicados por número de serie (restricción unique en modelo)
@@ -200,6 +224,24 @@ export const InstalacionesPage: React.FC = () => {
           }
         }
 
+        // Validar existencia de equipo en inventario según N.º de serie original
+        if (numSerieOriginal) {
+          const equipo = equiposPorSerie.get(numSerieOriginal.trim());
+          if (equipo) {
+            try {
+              await api.delete(`/equipos/${equipo.id_equipos}/`);
+              // Eliminar para evitar borrar de nuevo si hay duplicados de serie
+              equiposPorSerie.delete(numSerieOriginal.trim());
+            } catch (delErr) {
+              console.error('No se pudo eliminar el equipo del inventario durante la importación', delErr);
+            }
+          } else {
+            ordenesConEquipoInexistente.push(
+              `Orden ${numeroDeOrden}: el equipo con N.º de serie "${numSerieOriginal}" no existe en el inventario`
+            );
+          }
+        }
+
         try {
           await api.post('/instalaciones/', {
             numero_serie_equipo: numSerie,
@@ -217,6 +259,13 @@ export const InstalacionesPage: React.FC = () => {
       }
 
       await loadInstalaciones();
+
+      if (ordenesConEquipoInexistente.length > 0) {
+        window.alert(
+          'Durante la importación se detectaron instalaciones cuyo equipo no existe en el inventario:\n\n' +
+            ordenesConEquipoInexistente.join('\n')
+        );
+      }
     } catch (err) {
       console.error('Error importando instalaciones desde Excel', err);
       setError('No se pudo importar el archivo Excel de instalaciones. Verifica el formato.');
