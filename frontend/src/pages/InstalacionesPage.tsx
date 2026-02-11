@@ -662,7 +662,7 @@ export const InstalacionesPage: React.FC = () => {
                   type="text"
                   value={idTecnicoEmpresa}
                   onChange={(e) => setIdTecnicoEmpresa(e.target.value)}
-                  className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
               </div>
@@ -678,7 +678,7 @@ export const InstalacionesPage: React.FC = () => {
                   type="text"
                   value={nombreTecnico}
                   onChange={(e) => setNombreTecnico(e.target.value)}
-                  className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
               </div>
@@ -691,7 +691,7 @@ export const InstalacionesPage: React.FC = () => {
                   type="text"
                   value={tipo}
                   onChange={(e) => setTipo(e.target.value)}
-                  className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
             </div>
@@ -704,7 +704,7 @@ export const InstalacionesPage: React.FC = () => {
                 id="tipo-orden-inst"
                 value={tipoOrden}
                 onChange={(e) => setTipoOrden(e.target.value)}
-                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="">Sin tipo de orden</option>
                 {ordenes.map((ord) => (
@@ -736,7 +736,7 @@ export const InstalacionesPage: React.FC = () => {
                     value={selectedOrden.valor_orden_empresa ?? ''}
                     readOnly
                     rows={2}
-                    className="w-full cursor-default rounded border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-300"
+                    className="w-full cursor-default rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
                   />
                 </div>
               </div>
@@ -751,7 +751,7 @@ export const InstalacionesPage: React.FC = () => {
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
                 rows={3}
-                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
             </div>
             <div>
@@ -763,7 +763,7 @@ export const InstalacionesPage: React.FC = () => {
                 type="text"
                 value={orden}
                 onChange={(e) => setOrden(e.target.value)}
-                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 required
               />
             </div>

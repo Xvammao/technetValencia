@@ -38,6 +38,7 @@ export const EquiposPage: React.FC = () => {
   const [formTecnico, setFormTecnico] = useState('');
   const [operadores, setOperadores] = useState<Operador[]>([]);
   const [formOperador, setFormOperador] = useState('');
+  const [importOperadorId, setImportOperadorId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
@@ -137,6 +138,12 @@ export const EquiposPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!importOperadorId) {
+      window.alert('Antes de importar el Excel, selecciona a qué operador se asignarán los equipos.');
+      e.target.value = '';
+      return;
+    }
+
     setImporting(true);
     setError(null);
 
@@ -191,6 +198,7 @@ export const EquiposPage: React.FC = () => {
             nombre,
             numero_serie_equipo: serie,
             tecnico: 'stock',
+            operador: Number(importOperadorId),
           });
           createdCount += 1;
         } catch (rowErr) {
@@ -309,6 +317,18 @@ export const EquiposPage: React.FC = () => {
             >
               Exportar Excel
             </button>
+            <select
+              value={importOperadorId}
+              onChange={(e) => setImportOperadorId(e.target.value)}
+              className="w-full max-w-xs rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="">Operador para equipos importados...</option>
+              {operadores.map((operador) => (
+                <option key={operador.id_operador} value={operador.id_operador}>
+                  {operador.nombre_operador}
+                </option>
+              ))}
+            </select>
             <label className="flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50 cursor-pointer">
               <span>{importing ? 'Importando...' : 'Importar Excel'}</span>
               <input
@@ -474,7 +494,7 @@ export const EquiposPage: React.FC = () => {
                 id="tecnico"
                 value={formTecnico}
                 onChange={(e) => setFormTecnico(e.target.value)}
-                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="">Sin tecnico asignado</option>
                 {tecnicos.map((tecnico) => (
@@ -493,7 +513,7 @@ export const EquiposPage: React.FC = () => {
                 id="operador"
                 value={formOperador}
                 onChange={(e) => setFormOperador(e.target.value)}
-                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="">Sin operador asignado</option>
                 {operadores.map((operador) => (
@@ -512,7 +532,7 @@ export const EquiposPage: React.FC = () => {
                 type="text"
                 value={formSerie}
                 onChange={(e) => setFormSerie(e.target.value)}
-                className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 required
               />
             </div>
