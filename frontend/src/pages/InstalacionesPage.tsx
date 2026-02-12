@@ -167,6 +167,17 @@ export const InstalacionesPage: React.FC = () => {
       }
 
       const ordenesConEquipoInexistente: string[] = [];
+      const seriesDuplicadasInstalaciones: string[] = [];
+
+      // Conjunto de números de serie ya existentes en instalaciones (antes de esta importación)
+      const seriesInstalacionesExistentes = new Set(
+        instalaciones
+          .map((inst) => inst.numero_serie_equipo?.trim())
+          .filter((s): s is string => !!s)
+      );
+
+      // Conjunto para detectar duplicados dentro del propio archivo Excel (por número de serie original)
+      const seriesVistasEnExcel = new Set<string>();
 
       // Contador de duplicados por número de orden original
       const orderCounts: Record<string, number> = {};
@@ -200,7 +211,7 @@ export const InstalacionesPage: React.FC = () => {
         }
         orderCounts[originalOrderKey] = currentOrderCount + 1;
 
-        // Gestionar duplicados de número de serie (campo unique en modelo)
+        // Gestionar duplicados de número de serie (campo unique en modelo en BD)
         const originalSerieKey = numSerie;
         const currentSerieCount = serieCounts[originalSerieKey] ?? 0;
         if (currentSerieCount > 0) {
@@ -232,6 +243,24 @@ export const InstalacionesPage: React.FC = () => {
               `Orden ${numeroDeOrden}: el equipo con N.º de serie "${numSerieOriginal}" no existe en el inventario`
             );
           }
+
+          const serieClave = numSerieOriginal.trim();
+
+          // Avisar si la serie ya estaba en otra instalación antes de importar
+          if (seriesInstalacionesExistentes.has(serieClave)) {
+            seriesDuplicadasInstalaciones.push(
+              `Orden ${numeroDeOrden}: el número de serie "${numSerieOriginal}" ya está asociado a otra instalación.`
+            );
+          }
+
+          // Avisar si la misma serie aparece más de una vez en el mismo archivo Excel
+          if (seriesVistasEnExcel.has(serieClave)) {
+            seriesDuplicadasInstalaciones.push(
+              `Orden ${numeroDeOrden}: el número de serie "${numSerieOriginal}" se repite en el archivo Excel.`
+            );
+          } else {
+            seriesVistasEnExcel.add(serieClave);
+          }
         }
 
         try {
@@ -252,11 +281,22 @@ export const InstalacionesPage: React.FC = () => {
 
       await loadInstalaciones();
 
+      const mensajes: string[] = [];
       if (ordenesConEquipoInexistente.length > 0) {
-        window.alert(
-          'Durante la importación se detectaron instalaciones cuyo equipo no existe en el inventario:\n\n' +
+        mensajes.push(
+          'Instalaciones cuyo equipo no existe en el inventario de equipos:\n' +
             ordenesConEquipoInexistente.join('\n')
         );
+      }
+      if (seriesDuplicadasInstalaciones.length > 0) {
+        mensajes.push(
+          'Instalaciones que reutilizan un número de serie ya utilizado en otra instalación o repetido en el Excel:\n' +
+            seriesDuplicadasInstalaciones.join('\n')
+        );
+      }
+
+      if (mensajes.length > 0) {
+        window.alert('Durante la importación se encontraron las siguientes incidencias:\n\n' + mensajes.join('\n\n'));
       }
     } catch (err) {
       console.error('Error importando instalaciones desde Excel', err);
@@ -776,7 +816,7 @@ export const InstalacionesPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded bg-primary-500 px-4 py-2 text-xs font-medium text-white shadow hover:bg-primary-400 disabled:opacity-60"
+                className="rounded border border-primary-500 bg-white px-4 py-2 text-xs font-medium text-slate-800 shadow hover:bg-primary-50 disabled:opacity-60"
               >
                 {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
               </button>

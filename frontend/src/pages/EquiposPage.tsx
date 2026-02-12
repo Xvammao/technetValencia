@@ -592,7 +592,7 @@ export const EquiposPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded bg-primary-500 px-4 py-2 text-xs font-medium text-white shadow hover:bg-primary-400 disabled:opacity-60"
+                className="rounded border border-primary-500 bg-white px-4 py-2 text-xs font-medium text-slate-800 shadow hover:bg-primary-50 disabled:opacity-60"
               >
                 {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
               </button>

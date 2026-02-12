@@ -343,14 +343,14 @@ export const OrdenesPage: React.FC = () => {
                   setShowForm(false);
                   setEditing(null);
                 }}
-                className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                className="rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-100"
               >
                 Volver a la lista
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded bg-primary-500 px-4 py-2 text-xs font-medium text-white shadow hover:bg-primary-400 disabled:opacity-60"
+                className="rounded border border-primary-500 bg-white px-4 py-2 text-xs font-medium text-slate-800 shadow hover:bg-primary-50 disabled:opacity-60"
               >
                 {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
               </button>
