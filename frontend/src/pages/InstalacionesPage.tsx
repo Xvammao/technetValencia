@@ -80,13 +80,52 @@ export const InstalacionesPage: React.FC = () => {
   };
 
   const handleExportExcel = () => {
-    // Aplanar las instalaciones filtradas para exportar
-    const rows = filteredInstalaciones.map((inst) => ({
-      'N.º serie equipo': inst.numero_serie_equipo,
-      'N.º orden': inst.numero_de_orden,
-      'Nombre técnico': inst.nombre_tecnico,
-      'Tipo orden': inst.tipo_orden ?? '',
-    }));
+    // Agrupar por número de orden base y calcular totales técnico / empresa por grupo
+    const grupos = filteredInstalaciones.reduce<Record<string, Instalacion[]>>((acc, inst) => {
+      const baseOrden = inst.numero_de_orden.split('_DUPLI')[0];
+      if (!acc[baseOrden]) acc[baseOrden] = [];
+      acc[baseOrden].push(inst);
+      return acc;
+    }, {});
+
+    const parseMonto = (valor: string | null) => {
+      if (!valor) return 0;
+      const limpio = valor
+        .replace(/[^0-9,.-]/g, '')
+        .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+        .replace(',', '.');
+      const n = parseFloat(limpio);
+      return isNaN(n) ? 0 : n;
+    };
+
+    const rows: any[] = [];
+
+    Object.entries(grupos).forEach(([baseOrden, items]) => {
+      // Calcular totales del grupo como en la tabla
+      const totales = items.reduce(
+        (acc, inst) => {
+          if (!inst.tipo_orden) return acc;
+          const ordenDetalle = ordenes.find((o) => o.tipo_orden === inst.tipo_orden);
+          if (!ordenDetalle) return acc;
+
+          acc.totalTec += parseMonto(ordenDetalle.valor_orden_tecnico);
+          acc.totalEmp += parseMonto(ordenDetalle.valor_orden_empresa);
+          return acc;
+        },
+        { totalTec: 0, totalEmp: 0 }
+      );
+
+      items.forEach((inst) => {
+        rows.push({
+          'N.º serie equipo': inst.numero_serie_equipo,
+          'N.º orden': inst.numero_de_orden,
+          'Nombre técnico': inst.nombre_tecnico,
+          'Tipo orden': inst.tipo_orden ?? '',
+          'Total técnico grupo': totales.totalTec,
+          'Total empresa grupo': totales.totalEmp,
+        });
+      });
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
@@ -697,30 +736,35 @@ export const InstalacionesPage: React.FC = () => {
                 <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="nombre-tec">
                   Nombre técnico
                 </label>
-                <select
-                  id="nombre-tec"
-                  value={nombreTecnico}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setNombreTecnico(value);
-                    const tec = tecnicos.find((t) => t.nombre_tecnico === value);
-                    if (tec) {
-                      setIdTecnicoEmpresa(tec.id_tecnico_empresa);
-                    }
-                  }}
-                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  required
-                >
-                  <option value="">Selecciona un técnico...</option>
-                  {tecnicos.map((tec) => (
-                    <option key={tec.id_tecnico} value={tec.nombre_tecnico}>
-                      {tec.nombre_tecnico} ({tec.id_tecnico_empresa})
-                    </option>
-                  ))}
-                  {nombreTecnico && !tecnicos.some((t) => t.nombre_tecnico === nombreTecnico) && (
-                    <option value={nombreTecnico}>{nombreTecnico}</option>
-                  )}
-                </select>
+                <div className="relative">
+                  <select
+                    id="nombre-tec"
+                    value={nombreTecnico}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setNombreTecnico(value);
+                      const tec = tecnicos.find((t) => t.nombre_tecnico === value);
+                      if (tec) {
+                        setIdTecnicoEmpresa(tec.id_tecnico_empresa);
+                      }
+                    }}
+                    className="w-full appearance-none rounded border border-slate-300 bg-white px-3 py-2 pr-8 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  >
+                    <option value="">Selecciona un técnico...</option>
+                    {tecnicos.map((tec) => (
+                      <option key={tec.id_tecnico} value={tec.nombre_tecnico}>
+                        {tec.nombre_tecnico} ({tec.id_tecnico_empresa})
+                      </option>
+                    ))}
+                    {nombreTecnico && !tecnicos.some((t) => t.nombre_tecnico === nombreTecnico) && (
+                      <option value={nombreTecnico}>{nombreTecnico}</option>
+                    )}
+                  </select>
+                  <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-slate-400 text-xs">
+                    ▼
+                  </span>
+                </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="tipo-inst">
