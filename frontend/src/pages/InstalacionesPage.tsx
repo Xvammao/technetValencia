@@ -224,18 +224,10 @@ export const InstalacionesPage: React.FC = () => {
           }
         }
 
-        // Validar existencia de equipo en inventario según N.º de serie original
+        // Validar existencia de equipo en inventario según N.º de serie original, pero sin borrar del módulo de Equipos
         if (numSerieOriginal) {
           const equipo = equiposPorSerie.get(numSerieOriginal.trim());
-          if (equipo) {
-            try {
-              await api.delete(`/equipos/${equipo.id_equipos}/`);
-              // Eliminar para evitar borrar de nuevo si hay duplicados de serie
-              equiposPorSerie.delete(numSerieOriginal.trim());
-            } catch (delErr) {
-              console.error('No se pudo eliminar el equipo del inventario durante la importación', delErr);
-            }
-          } else {
+          if (!equipo) {
             ordenesConEquipoInexistente.push(
               `Orden ${numeroDeOrden}: el equipo con N.º de serie "${numSerieOriginal}" no existe en el inventario`
             );
@@ -777,7 +769,7 @@ export const InstalacionesPage: React.FC = () => {
                   setShowForm(false);
                   setEditing(null);
                 }}
-                className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                className="rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-100"
               >
                 Volver a la lista
               </button>
