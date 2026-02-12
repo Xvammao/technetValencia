@@ -7,7 +7,8 @@ interface Equipo {
   nombre: string;
   numero_serie_equipo: string;
   tecnico: string;
-  operador: number | null;
+  // operador puede venir como id numérico, string o incluso objeto con id_operador
+  operador: number | string | { id_operador: number } | null;
 }
 
 interface Tecnico {
@@ -379,7 +380,36 @@ export const EquiposPage: React.FC = () => {
                       <td className="px-4 py-2 text-slate-800">{equipo.tecnico}</td>
                       <td className="px-4 py-2 text-slate-800">
                         {(() => {
-                          const op = operadores.find((o) => o.id_operador === equipo.operador);
+                          // Caso 1: el backend ya devuelve directamente el nombre del operador como string
+                          if (typeof equipo.operador === 'string' && equipo.operador.trim()) {
+                            const parsed = Number(equipo.operador);
+                            // Si NO es un número válido, lo tomamos como nombre tal cual
+                            if (isNaN(parsed)) {
+                              return equipo.operador;
+                            }
+                          }
+
+                          // Caso 2: el backend devuelve objeto con nombre_operador
+                          if (equipo.operador && typeof equipo.operador === 'object') {
+                            const anyOperador = equipo.operador as any;
+                            if (typeof anyOperador.nombre_operador === 'string' && anyOperador.nombre_operador.trim()) {
+                              return anyOperador.nombre_operador;
+                            }
+                          }
+
+                          // Caso 3: resolver por ID numérico usando la lista de operadores
+                          let opId: number | null = null;
+                          if (typeof equipo.operador === 'number') {
+                            opId = equipo.operador;
+                          } else if (typeof equipo.operador === 'string' && equipo.operador) {
+                            const parsed = Number(equipo.operador);
+                            opId = isNaN(parsed) ? null : parsed;
+                          } else if (equipo.operador && typeof equipo.operador === 'object') {
+                            const maybeId = (equipo.operador as any).id_operador;
+                            if (typeof maybeId === 'number') opId = maybeId;
+                          }
+
+                          const op = opId != null ? operadores.find((o) => o.id_operador === opId) : undefined;
                           return op ? op.nombre_operador : '';
                         })()}
                       </td>
@@ -546,7 +576,7 @@ export const EquiposPage: React.FC = () => {
                   resetForm();
                   setShowForm(false);
                 }}
-                className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                className="rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-100"
               >
                 Volver a la lista
               </button>
@@ -554,7 +584,7 @@ export const EquiposPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                  className="rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-100"
                 >
                   Cancelar
                 </button>
