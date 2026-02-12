@@ -21,6 +21,12 @@ interface OrdenResumen {
   valor_orden_empresa: string | null;
 }
 
+interface Tecnico {
+  id_tecnico: number;
+  nombre_tecnico: string;
+  id_tecnico_empresa: string;
+}
+
 export const InstalacionesPage: React.FC = () => {
   const [instalaciones, setInstalaciones] = useState<Instalacion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +48,7 @@ export const InstalacionesPage: React.FC = () => {
   const [editing, setEditing] = useState<Instalacion | null>(null);
 
   const [ordenes, setOrdenes] = useState<OrdenResumen[]>([]);
+  const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -59,6 +66,16 @@ export const InstalacionesPage: React.FC = () => {
       setError('No se pudieron cargar las instalaciones.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTecnicos = async () => {
+    try {
+      const response = await api.get('/tecnicos/');
+      const data = (response.data?.results ?? response.data) as Tecnico[];
+      setTecnicos(data);
+    } catch (err) {
+      console.error('Error cargando técnicos para instalaciones', err);
     }
   };
 
@@ -90,6 +107,7 @@ export const InstalacionesPage: React.FC = () => {
   useEffect(() => {
     loadInstalaciones();
     loadOrdenes();
+    loadTecnicos();
   }, []);
 
   const startCreate = () => {
@@ -313,32 +331,6 @@ export const InstalacionesPage: React.FC = () => {
     setError(null);
 
     try {
-      // Si estamos editando, validar que el número de serie exista en el inventario de equipos
-      if (editing && serie.trim()) {
-        try {
-          const equiposRes = await api.get('/equipos/');
-          const equiposData = (equiposRes.data?.results ?? equiposRes.data) as Array<{
-            id_equipos: number;
-            nombre: string;
-            numero_serie_equipo: string;
-          }>;
-
-          const existeEnEquipos = equiposData.some(
-            (eq) => eq.numero_serie_equipo?.trim() === serie.trim()
-          );
-
-          if (!existeEnEquipos) {
-            window.alert(
-              `No se puede actualizar la instalación: el equipo con N.º de serie "${serie.trim()}" no existe en el inventario de equipos.`
-            );
-            setSaving(false);
-            return;
-          }
-        } catch (equipErr) {
-          console.error('Error validando número de serie en equipos antes de actualizar instalación', equipErr);
-        }
-      }
-
       const payload = {
         numero_serie_equipo: serie,
         numero_de_orden: orden,
@@ -705,14 +697,30 @@ export const InstalacionesPage: React.FC = () => {
                 <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="nombre-tec">
                   Nombre técnico
                 </label>
-                <input
+                <select
                   id="nombre-tec"
-                  type="text"
                   value={nombreTecnico}
-                  onChange={(e) => setNombreTecnico(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNombreTecnico(value);
+                    const tec = tecnicos.find((t) => t.nombre_tecnico === value);
+                    if (tec) {
+                      setIdTecnicoEmpresa(tec.id_tecnico_empresa);
+                    }
+                  }}
                   className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
-                />
+                >
+                  <option value="">Selecciona un técnico...</option>
+                  {tecnicos.map((tec) => (
+                    <option key={tec.id_tecnico} value={tec.nombre_tecnico}>
+                      {tec.nombre_tecnico} ({tec.id_tecnico_empresa})
+                    </option>
+                  ))}
+                  {nombreTecnico && !tecnicos.some((t) => t.nombre_tecnico === nombreTecnico) && (
+                    <option value={nombreTecnico}>{nombreTecnico}</option>
+                  )}
+                </select>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="tipo-inst">
