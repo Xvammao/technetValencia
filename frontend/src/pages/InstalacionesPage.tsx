@@ -118,7 +118,8 @@ export const InstalacionesPage: React.FC = () => {
       items.forEach((inst) => {
         rows.push({
           'N.º serie equipo': inst.numero_serie_equipo,
-          'N.º orden': inst.numero_de_orden,
+          // Usar siempre el número de orden base para que en Excel coincida con el agrupado
+          'N.º orden': baseOrden,
           'Nombre técnico': inst.nombre_tecnico,
           'Tipo orden': inst.tipo_orden ?? '',
           'Total técnico grupo': totales.totalTec,
