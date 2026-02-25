@@ -120,6 +120,7 @@ export const InstalacionesPage: React.FC = () => {
           'N.º serie equipo': inst.numero_serie_equipo,
           // Usar siempre el número de orden base para que en Excel coincida con el agrupado
           'N.º orden': baseOrden,
+          'Fecha cierre': inst.fecha_cierre ?? '',
           'Nombre técnico': inst.nombre_tecnico,
           'Tipo orden': inst.tipo_orden ?? '',
           'Total técnico grupo': totales.totalTec,

@@ -108,11 +108,48 @@ export const EquiposPage: React.FC = () => {
 
     if (!search.trim()) return true;
     const term = search.toLowerCase();
+
+    // Resolver nombre de operador como en la tabla para poder buscar por él
+    let operadorNombre = '';
+    // Caso 1: string no numérico -> lo tomamos como nombre
+    if (typeof equipo.operador === 'string' && equipo.operador.trim()) {
+      const parsed = Number(equipo.operador);
+      if (isNaN(parsed)) {
+        operadorNombre = equipo.operador;
+      }
+    }
+
+    // Caso 2: objeto con nombre_operador
+    if (!operadorNombre && equipo.operador && typeof equipo.operador === 'object') {
+      const anyOperador = equipo.operador as any;
+      if (typeof anyOperador.nombre_operador === 'string' && anyOperador.nombre_operador.trim()) {
+        operadorNombre = anyOperador.nombre_operador;
+      }
+    }
+
+    // Caso 3: ID numérico -> buscar en lista de operadores
+    if (!operadorNombre) {
+      let opId: number | null = null;
+      if (typeof equipo.operador === 'number') {
+        opId = equipo.operador;
+      } else if (typeof equipo.operador === 'string' && equipo.operador) {
+        const parsed = Number(equipo.operador);
+        opId = isNaN(parsed) ? null : parsed;
+      } else if (equipo.operador && typeof equipo.operador === 'object') {
+        const maybeId = (equipo.operador as any).id_operador;
+        if (typeof maybeId === 'number') opId = maybeId;
+      }
+
+      const op = opId != null ? operadores.find((o) => o.id_operador === opId) : undefined;
+      if (op) operadorNombre = op.nombre_operador;
+    }
+
     return (
       equipo.id_equipos.toString().includes(term) ||
       equipo.nombre.toLowerCase().includes(term) ||
       equipo.numero_serie_equipo.toLowerCase().includes(term) ||
-      equipo.tecnico.toLowerCase().includes(term)
+      equipo.tecnico.toLowerCase().includes(term) ||
+      operadorNombre.toLowerCase().includes(term)
     );
   });
 
@@ -122,12 +159,47 @@ export const EquiposPage: React.FC = () => {
   const paginatedEquipos = filteredEquipos.slice(startIndex, startIndex + pageSize);
 
   const handleExportExcel = () => {
-    const rows = filteredEquipos.map((equipo) => ({
-      ID: equipo.id_equipos,
-      Nombre: equipo.nombre,
-      'N.º serie': equipo.numero_serie_equipo,
-      Tecnico: equipo.tecnico,
-    }));
+    const rows = filteredEquipos.map((equipo) => {
+      // Resolver nombre de operador igual que en la tabla
+      let operadorNombre = '';
+      if (typeof equipo.operador === 'string' && equipo.operador.trim()) {
+        const parsed = Number(equipo.operador);
+        if (isNaN(parsed)) {
+          operadorNombre = equipo.operador;
+        }
+      }
+
+      if (!operadorNombre && equipo.operador && typeof equipo.operador === 'object') {
+        const anyOperador = equipo.operador as any;
+        if (typeof anyOperador.nombre_operador === 'string' && anyOperador.nombre_operador.trim()) {
+          operadorNombre = anyOperador.nombre_operador;
+        }
+      }
+
+      if (!operadorNombre) {
+        let opId: number | null = null;
+        if (typeof equipo.operador === 'number') {
+          opId = equipo.operador;
+        } else if (typeof equipo.operador === 'string' && equipo.operador) {
+          const parsed = Number(equipo.operador);
+          opId = isNaN(parsed) ? null : parsed;
+        } else if (equipo.operador && typeof equipo.operador === 'object') {
+          const maybeId = (equipo.operador as any).id_operador;
+          if (typeof maybeId === 'number') opId = maybeId;
+        }
+
+        const op = opId != null ? operadores.find((o) => o.id_operador === opId) : undefined;
+        if (op) operadorNombre = op.nombre_operador;
+      }
+
+      return {
+        ID: equipo.id_equipos,
+        Nombre: equipo.nombre,
+        'N.º serie': equipo.numero_serie_equipo,
+        Tecnico: equipo.tecnico,
+        Operador: operadorNombre,
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
