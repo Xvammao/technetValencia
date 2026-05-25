@@ -1,8 +1,10 @@
 from django.contrib import admin
 from django.urls import path
 from . import views
+from . import auth_views
 
 urlpatterns = [
+    path('login/', auth_views.CustomAuthToken.as_view(), name='auth-login'),
     path('equipos/', views.EquiposListCreateView.as_view(), name='equipos-list-create'),
     path('equipos/<int:pk>/', views.EquiposRetrieveUpdateDestroyView.as_view(), name='equipos-retrieve-update-destroy'),
     path('instalaciones/', views.InstalacionesListCreateView.as_view(), name='instalaciones-list-create'),

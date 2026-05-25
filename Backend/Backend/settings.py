@@ -62,6 +62,7 @@ DJOSER = {
     'TOKEN_MODEL': 'rest_framework.authtoken.models.Token',
     'SERIALIZERS': {},
     'HIDE_USERS': False,
+    'SEND_ACTIVATION_EMAIL': False,
 }
 
 MIDDLEWARE = [

@@ -24,7 +24,7 @@ export const LoginPage: React.FC = () => {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "";
-      const loginUrl = apiUrl ? `${apiUrl}/auth/login/` : "/auth/login/";
+      const loginUrl = apiUrl ? `${apiUrl}/api/login/` : "/api/login/";
 
       const response = await axios.post(loginUrl, {
         username,
