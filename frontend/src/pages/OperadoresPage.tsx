@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import * as XLSX from 'xlsx';
-import { api } from '../api/client';
+import React, { useEffect, useState } from "react";
+import ExcelJS from "exceljs";
+import { api } from "../api/client";
 
 interface Operador {
   id_operador: number;
@@ -12,10 +12,10 @@ export const OperadoresPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [nombre, setNombre] = useState('');
+  const [nombre, setNombre] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Operador | null>(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
@@ -23,27 +23,43 @@ export const OperadoresPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/operador/');
+      const response = await api.get("/operador/");
       const data = (response.data?.results ?? response.data) as Operador[];
       setOperadores(data);
     } catch (err) {
-      console.error('Error cargando operadores', err);
-      setError('No se pudieron cargar los operadores.');
+      console.error("Error cargando operadores", err);
+      setError("No se pudieron cargar los operadores.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleExportExcel = () => {
-    const rows = filteredOperadores.map((op) => ({
-      ID: op.id_operador,
-      Nombre: op.nombre_operador,
-    }));
+  const handleExportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Operadores");
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Operadores');
-    XLSX.writeFile(workbook, 'operadores.xlsx');
+    worksheet.columns = [
+      { header: "ID", key: "id" },
+      { header: "Nombre", key: "nombre" },
+    ];
+
+    for (const op of filteredOperadores) {
+      worksheet.addRow({
+        id: op.id_operador,
+        nombre: op.nombre_operador,
+      });
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "operadores.xlsx";
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const filteredOperadores = operadores.filter((op) => {
@@ -55,10 +71,16 @@ export const OperadoresPage: React.FC = () => {
     );
   });
 
-  const totalPages = Math.max(1, Math.ceil(filteredOperadores.length / pageSize));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredOperadores.length / pageSize),
+  );
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
-  const paginatedOperadores = filteredOperadores.slice(startIndex, startIndex + pageSize);
+  const paginatedOperadores = filteredOperadores.slice(
+    startIndex,
+    startIndex + pageSize,
+  );
 
   useEffect(() => {
     loadOperadores();
@@ -71,17 +93,19 @@ export const OperadoresPage: React.FC = () => {
 
     try {
       if (editing) {
-        await api.put(`/operador/${editing.id_operador}/`, { nombre_operador: nombre });
+        await api.put(`/operador/${editing.id_operador}/`, {
+          nombre_operador: nombre,
+        });
       } else {
-        await api.post('/operador/', { nombre_operador: nombre });
+        await api.post("/operador/", { nombre_operador: nombre });
       }
-      setNombre('');
+      setNombre("");
       await loadOperadores();
       setEditing(null);
       setShowForm(false);
     } catch (err) {
-      console.error('Error guardando operador', err);
-      setError('No se pudo guardar el operador.');
+      console.error("Error guardando operador", err);
+      setError("No se pudo guardar el operador.");
     } finally {
       setSaving(false);
     }
@@ -89,7 +113,7 @@ export const OperadoresPage: React.FC = () => {
 
   const startCreate = () => {
     setEditing(null);
-    setNombre('');
+    setNombre("");
     setShowForm(true);
   };
 
@@ -100,14 +124,15 @@ export const OperadoresPage: React.FC = () => {
   };
 
   const handleDelete = async (op: Operador) => {
-    if (!window.confirm(`¿Eliminar el operador "${op.nombre_operador}"?`)) return;
+    if (!window.confirm(`¿Eliminar el operador "${op.nombre_operador}"?`))
+      return;
 
     try {
       await api.delete(`/operador/${op.id_operador}/`);
       await loadOperadores();
     } catch (err) {
-      console.error('Error eliminando operador', err);
-      setError('No se pudo eliminar el operador.');
+      console.error("Error eliminando operador", err);
+      setError("No se pudo eliminar el operador.");
     }
   };
 
@@ -144,23 +169,40 @@ export const OperadoresPage: React.FC = () => {
 
       {!showForm && (
         <div className="overflow-hidden rounded border border-slate-200 bg-white shadow">
-          {loading && <p className="p-4 text-sm text-slate-500">Cargando operadores...</p>}
-          {error && !loading && <p className="p-4 text-sm text-red-500">{error}</p>}
+          {loading && (
+            <p className="p-4 text-sm text-slate-500">Cargando operadores...</p>
+          )}
+          {error && !loading && (
+            <p className="p-4 text-sm text-red-500">{error}</p>
+          )}
           {!loading && !error && (
             <>
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">ID</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">Nombre</th>
-                    <th className="px-4 py-2 text-right font-medium text-slate-700">Acciones</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      ID
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      Nombre
+                    </th>
+                    <th className="px-4 py-2 text-right font-medium text-slate-700">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedOperadores.map((op) => (
-                    <tr key={op.id_operador} className="border-t border-slate-200 hover:bg-slate-50">
-                      <td className="px-4 py-2 text-slate-800">{op.id_operador}</td>
-                      <td className="px-4 py-2 text-slate-800">{op.nombre_operador}</td>
+                    <tr
+                      key={op.id_operador}
+                      className="border-t border-slate-200 hover:bg-slate-50"
+                    >
+                      <td className="px-4 py-2 text-slate-800">
+                        {op.id_operador}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {op.nombre_operador}
+                      </td>
                       <td className="px-4 py-2 text-right space-x-2">
                         <button
                           type="button"
@@ -181,7 +223,10 @@ export const OperadoresPage: React.FC = () => {
                   ))}
                   {operadores.length === 0 && (
                     <tr>
-                      <td colSpan={2} className="px-4 py-4 text-center text-slate-500">
+                      <td
+                        colSpan={2}
+                        className="px-4 py-4 text-center text-slate-500"
+                      >
                         No hay operadores registrados.
                       </td>
                     </tr>
@@ -207,24 +252,28 @@ export const OperadoresPage: React.FC = () => {
                   >
                     ‹
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() => setCurrentPage(page)}
-                      className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
-                        page === safeCurrentPage
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-white text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setCurrentPage(page)}
+                        className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
+                          page === safeCurrentPage
+                            ? "bg-primary-500 text-white"
+                            : "bg-white text-slate-700 hover:bg-slate-100"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ),
+                  )}
                   <button
                     type="button"
                     className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={safeCurrentPage === totalPages}
                   >
                     ›
@@ -246,10 +295,15 @@ export const OperadoresPage: React.FC = () => {
 
       {showForm && (
         <div className="rounded border border-slate-200 bg-white p-4 shadow">
-          <h2 className="mb-3 text-lg font-medium">{editing ? 'Editar operador' : 'Nuevo operador'}</h2>
+          <h2 className="mb-3 text-lg font-medium">
+            {editing ? "Editar operador" : "Nuevo operador"}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="nombre-op">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="nombre-op"
+              >
                 Nombre del operador
               </label>
               <input
@@ -280,7 +334,7 @@ export const OperadoresPage: React.FC = () => {
                 disabled={saving}
                 className="rounded border border-primary-500 bg-white px-4 py-2 text-xs font-medium text-slate-800 shadow hover:bg-primary-50 disabled:opacity-60"
               >
-                {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
+                {saving ? "Guardando..." : editing ? "Actualizar" : "Crear"}
               </button>
             </div>
           </form>

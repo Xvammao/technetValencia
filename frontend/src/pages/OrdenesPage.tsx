@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import * as XLSX from 'xlsx';
-import { api } from '../api/client';
+import React, { useEffect, useState } from "react";
+import ExcelJS from "exceljs";
+import { api } from "../api/client";
 
 interface Orden {
   id_orden: number;
@@ -16,13 +16,13 @@ export const OrdenesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const [tipo, setTipo] = useState('');
-  const [puntos, setPuntos] = useState('');
+  const [tipo, setTipo] = useState("");
+  const [puntos, setPuntos] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [valorTec, setValorTec] = useState('');
-  const [valorEmp, setValorEmp] = useState('');
+  const [valorTec, setValorTec] = useState("");
+  const [valorEmp, setValorEmp] = useState("");
   const [editing, setEditing] = useState<Orden | null>(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
@@ -30,12 +30,12 @@ export const OrdenesPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/ordenes/');
+      const response = await api.get("/ordenes/");
       const data = (response.data?.results ?? response.data) as Orden[];
       setOrdenes(data);
     } catch (err) {
-      console.error('Error cargando órdenes', err);
-      setError('No se pudieron cargar las órdenes.');
+      console.error("Error cargando órdenes", err);
+      setError("No se pudieron cargar las órdenes.");
     } finally {
       setLoading(false);
     }
@@ -47,28 +47,50 @@ export const OrdenesPage: React.FC = () => {
     return (
       orden.id_orden.toString().includes(term) ||
       orden.tipo_orden.toLowerCase().includes(term) ||
-      (orden.puntos_orden ?? '').toString().toLowerCase().includes(term)
+      (orden.puntos_orden ?? "").toString().toLowerCase().includes(term)
     );
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredOrdenes.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
-  const paginatedOrdenes = filteredOrdenes.slice(startIndex, startIndex + pageSize);
+  const paginatedOrdenes = filteredOrdenes.slice(
+    startIndex,
+    startIndex + pageSize,
+  );
 
-  const handleExportExcel = () => {
-    const rows = filteredOrdenes.map((orden) => ({
-      ID: orden.id_orden,
-      'Tipo de orden': orden.tipo_orden,
-      Puntos: orden.puntos_orden,
-      'Valor técnico': orden.valor_orden_tecnico,
-      'Valor empresa': orden.valor_orden_empresa,
-    }));
+  const handleExportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Ordenes");
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Ordenes');
-    XLSX.writeFile(workbook, 'ordenes.xlsx');
+    worksheet.columns = [
+      { header: "ID", key: "id" },
+      { header: "Tipo de orden", key: "tipo" },
+      { header: "Puntos", key: "puntos" },
+      { header: "Valor técnico", key: "valorTec" },
+      { header: "Valor empresa", key: "valorEmp" },
+    ];
+
+    for (const orden of filteredOrdenes) {
+      worksheet.addRow({
+        id: orden.id_orden,
+        tipo: orden.tipo_orden,
+        puntos: orden.puntos_orden,
+        valorTec: orden.valor_orden_tecnico,
+        valorEmp: orden.valor_orden_empresa,
+      });
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ordenes.xlsx";
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -91,18 +113,18 @@ export const OrdenesPage: React.FC = () => {
       if (editing) {
         await api.put(`/ordenes/${editing.id_orden}/`, payload);
       } else {
-        await api.post('/ordenes/', payload);
+        await api.post("/ordenes/", payload);
       }
-      setTipo('');
-      setPuntos('');
-      setValorTec('');
-      setValorEmp('');
+      setTipo("");
+      setPuntos("");
+      setValorTec("");
+      setValorEmp("");
       await loadOrdenes();
       setEditing(null);
       setShowForm(false);
     } catch (err) {
-      console.error('Error guardando orden', err);
-      setError('No se pudo guardar la orden.');
+      console.error("Error guardando orden", err);
+      setError("No se pudo guardar la orden.");
     } finally {
       setSaving(false);
     }
@@ -110,19 +132,19 @@ export const OrdenesPage: React.FC = () => {
 
   const startCreate = () => {
     setEditing(null);
-    setTipo('');
-    setPuntos('');
-    setValorTec('');
-    setValorEmp('');
+    setTipo("");
+    setPuntos("");
+    setValorTec("");
+    setValorEmp("");
     setShowForm(true);
   };
 
   const startEdit = (orden: Orden) => {
     setEditing(orden);
     setTipo(orden.tipo_orden);
-    setPuntos(orden.puntos_orden ?? '');
-    setValorTec(orden.valor_orden_tecnico ?? '');
-    setValorEmp(orden.valor_orden_empresa ?? '');
+    setPuntos(orden.puntos_orden ?? "");
+    setValorTec(orden.valor_orden_tecnico ?? "");
+    setValorEmp(orden.valor_orden_empresa ?? "");
     setShowForm(true);
   };
 
@@ -133,8 +155,8 @@ export const OrdenesPage: React.FC = () => {
       await api.delete(`/ordenes/${orden.id_orden}/`);
       await loadOrdenes();
     } catch (err) {
-      console.error('Error eliminando orden', err);
-      setError('No se pudo eliminar la orden.');
+      console.error("Error eliminando orden", err);
+      setError("No se pudo eliminar la orden.");
     }
   };
 
@@ -171,29 +193,58 @@ export const OrdenesPage: React.FC = () => {
 
       {!showForm && (
         <div className="overflow-hidden rounded border border-slate-200 bg-white shadow">
-          {loading && <p className="p-4 text-sm text-slate-500">Cargando órdenes...</p>}
-          {error && !loading && <p className="p-4 text-sm text-red-500">{error}</p>}
+          {loading && (
+            <p className="p-4 text-sm text-slate-500">Cargando órdenes...</p>
+          )}
+          {error && !loading && (
+            <p className="p-4 text-sm text-red-500">{error}</p>
+          )}
           {!loading && !error && (
             <>
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">ID</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">Tipo</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">Puntos</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">Valor técnico</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">Valor empresa</th>
-                    <th className="px-4 py-2 text-right font-medium text-slate-700">Acciones</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      ID
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      Tipo
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      Puntos
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      Valor técnico
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      Valor empresa
+                    </th>
+                    <th className="px-4 py-2 text-right font-medium text-slate-700">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedOrdenes.map((orden) => (
-                    <tr key={orden.id_orden} className="border-t border-slate-200 hover:bg-slate-50">
-                      <td className="px-4 py-2 text-slate-800">{orden.id_orden}</td>
-                      <td className="px-4 py-2 text-slate-800">{orden.tipo_orden}</td>
-                      <td className="px-4 py-2 text-slate-800">{orden.puntos_orden}</td>
-                      <td className="px-4 py-2 text-slate-800">{orden.valor_orden_tecnico ?? '-'}</td>
-                      <td className="px-4 py-2 text-slate-800">{orden.valor_orden_empresa ?? '-'}</td>
+                    <tr
+                      key={orden.id_orden}
+                      className="border-t border-slate-200 hover:bg-slate-50"
+                    >
+                      <td className="px-4 py-2 text-slate-800">
+                        {orden.id_orden}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {orden.tipo_orden}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {orden.puntos_orden}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {orden.valor_orden_tecnico ?? "-"}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {orden.valor_orden_empresa ?? "-"}
+                      </td>
                       <td className="px-4 py-2 text-right space-x-2">
                         <button
                           type="button"
@@ -214,7 +265,10 @@ export const OrdenesPage: React.FC = () => {
                   ))}
                   {ordenes.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-4 py-4 text-center text-slate-500">
+                      <td
+                        colSpan={3}
+                        className="px-4 py-4 text-center text-slate-500"
+                      >
                         No hay órdenes registradas.
                       </td>
                     </tr>
@@ -240,24 +294,28 @@ export const OrdenesPage: React.FC = () => {
                   >
                     ‹
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() => setCurrentPage(page)}
-                      className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
-                        page === safeCurrentPage
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-white text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setCurrentPage(page)}
+                        className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
+                          page === safeCurrentPage
+                            ? "bg-primary-500 text-white"
+                            : "bg-white text-slate-700 hover:bg-slate-100"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ),
+                  )}
                   <button
                     type="button"
                     className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={safeCurrentPage === totalPages}
                   >
                     ›
@@ -279,10 +337,15 @@ export const OrdenesPage: React.FC = () => {
 
       {showForm && (
         <div className="rounded border border-slate-200 bg-white p-4 shadow">
-          <h2 className="mb-3 text-lg font-medium">{editing ? 'Editar orden' : 'Nueva orden'}</h2>
+          <h2 className="mb-3 text-lg font-medium">
+            {editing ? "Editar orden" : "Nueva orden"}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="tipo-ord">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="tipo-ord"
+              >
                 Tipo de orden
               </label>
               <input
@@ -295,7 +358,10 @@ export const OrdenesPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="puntos-ord">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="puntos-ord"
+              >
                 Puntos (opcional)
               </label>
               <input
@@ -309,7 +375,10 @@ export const OrdenesPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="valor-tec-ord">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="valor-tec-ord"
+              >
                 Valor de la orden para el técnico (opcional)
               </label>
               <textarea
@@ -322,7 +391,10 @@ export const OrdenesPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="valor-emp-ord">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="valor-emp-ord"
+              >
                 Valor de la orden para la empresa (opcional)
               </label>
               <textarea
@@ -352,7 +424,7 @@ export const OrdenesPage: React.FC = () => {
                 disabled={saving}
                 className="rounded border border-primary-500 bg-white px-4 py-2 text-xs font-medium text-slate-800 shadow hover:bg-primary-50 disabled:opacity-60"
               >
-                {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
+                {saving ? "Guardando..." : editing ? "Actualizar" : "Crear"}
               </button>
             </div>
           </form>

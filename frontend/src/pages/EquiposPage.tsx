@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import * as XLSX from 'xlsx';
-import { api } from '../api/client';
+import React, { useEffect, useState } from "react";
+import ExcelJS from "exceljs";
+import { api } from "../api/client";
 
 interface Equipo {
   id_equipos: number;
@@ -29,17 +29,17 @@ export const EquiposPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   const [editing, setEditing] = useState<Equipo | null>(null);
-  const [formNombre, setFormNombre] = useState('');
-  const [formSerie, setFormSerie] = useState('');
+  const [formNombre, setFormNombre] = useState("");
+  const [formSerie, setFormSerie] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [seriesInstalaciones, setSeriesInstalaciones] = useState<string[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
-  const [formTecnico, setFormTecnico] = useState('');
+  const [formTecnico, setFormTecnico] = useState("");
   const [operadores, setOperadores] = useState<Operador[]>([]);
-  const [formOperador, setFormOperador] = useState('');
-  const [importOperadorId, setImportOperadorId] = useState('');
+  const [formOperador, setFormOperador] = useState("");
+  const [importOperadorId, setImportOperadorId] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
@@ -47,12 +47,12 @@ export const EquiposPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/equipos/');
+      const response = await api.get("/equipos/");
       const data = (response.data?.results ?? response.data) as Equipo[];
       setEquipos(data);
     } catch (err) {
-      console.error('Error cargando equipos', err);
-      setError('No se pudieron cargar los equipos.');
+      console.error("Error cargando equipos", err);
+      setError("No se pudieron cargar los equipos.");
     } finally {
       setLoading(false);
     }
@@ -60,27 +60,27 @@ export const EquiposPage: React.FC = () => {
 
   const loadOperadores = async () => {
     try {
-      const response = await api.get('/operador/');
+      const response = await api.get("/operador/");
       const data = (response.data?.results ?? response.data) as Operador[];
       setOperadores(data);
     } catch (err) {
-      console.error('Error cargando operadores para equipos', err);
+      console.error("Error cargando operadores para equipos", err);
     }
   };
 
   const loadTecnicos = async () => {
     try {
-      const response = await api.get('/tecnicos/');
+      const response = await api.get("/tecnicos/");
       const data = (response.data?.results ?? response.data) as Tecnico[];
       setTecnicos(data);
     } catch (err) {
-      console.error('Error cargando tecnicos para equipos', err);
+      console.error("Error cargando tecnicos para equipos", err);
     }
   };
 
   const loadSeriesInstalaciones = async () => {
     try {
-      const response = await api.get('/instalaciones/');
+      const response = await api.get("/instalaciones/");
       const data = (response.data?.results ?? response.data) as Array<{
         numero_serie_equipo: string;
       }>;
@@ -89,13 +89,16 @@ export const EquiposPage: React.FC = () => {
         .filter((s): s is string => !!s);
       setSeriesInstalaciones(series);
     } catch (err) {
-      console.error('Error cargando series de instalaciones para filtrar equipos', err);
+      console.error(
+        "Error cargando series de instalaciones para filtrar equipos",
+        err,
+      );
     }
   };
 
   const filteredEquipos = equipos.filter((equipo) => {
     const seriesSet = new Set(
-      seriesInstalaciones.map((s) => s.toLowerCase().trim())
+      seriesInstalaciones.map((s) => s.toLowerCase().trim()),
     );
 
     // Si el N.º de serie del equipo ya existe en instalaciones, no mostrarlo
@@ -110,9 +113,9 @@ export const EquiposPage: React.FC = () => {
     const term = search.toLowerCase();
 
     // Resolver nombre de operador como en la tabla para poder buscar por él
-    let operadorNombre = '';
+    let operadorNombre = "";
     // Caso 1: string no numérico -> lo tomamos como nombre
-    if (typeof equipo.operador === 'string' && equipo.operador.trim()) {
+    if (typeof equipo.operador === "string" && equipo.operador.trim()) {
       const parsed = Number(equipo.operador);
       if (isNaN(parsed)) {
         operadorNombre = equipo.operador;
@@ -120,9 +123,16 @@ export const EquiposPage: React.FC = () => {
     }
 
     // Caso 2: objeto con nombre_operador
-    if (!operadorNombre && equipo.operador && typeof equipo.operador === 'object') {
+    if (
+      !operadorNombre &&
+      equipo.operador &&
+      typeof equipo.operador === "object"
+    ) {
       const anyOperador = equipo.operador as any;
-      if (typeof anyOperador.nombre_operador === 'string' && anyOperador.nombre_operador.trim()) {
+      if (
+        typeof anyOperador.nombre_operador === "string" &&
+        anyOperador.nombre_operador.trim()
+      ) {
         operadorNombre = anyOperador.nombre_operador;
       }
     }
@@ -130,17 +140,20 @@ export const EquiposPage: React.FC = () => {
     // Caso 3: ID numérico -> buscar en lista de operadores
     if (!operadorNombre) {
       let opId: number | null = null;
-      if (typeof equipo.operador === 'number') {
+      if (typeof equipo.operador === "number") {
         opId = equipo.operador;
-      } else if (typeof equipo.operador === 'string' && equipo.operador) {
+      } else if (typeof equipo.operador === "string" && equipo.operador) {
         const parsed = Number(equipo.operador);
         opId = isNaN(parsed) ? null : parsed;
-      } else if (equipo.operador && typeof equipo.operador === 'object') {
+      } else if (equipo.operador && typeof equipo.operador === "object") {
         const maybeId = (equipo.operador as any).id_operador;
-        if (typeof maybeId === 'number') opId = maybeId;
+        if (typeof maybeId === "number") opId = maybeId;
       }
 
-      const op = opId != null ? operadores.find((o) => o.id_operador === opId) : undefined;
+      const op =
+        opId != null
+          ? operadores.find((o) => o.id_operador === opId)
+          : undefined;
       if (op) operadorNombre = op.nombre_operador;
     }
 
@@ -156,55 +169,84 @@ export const EquiposPage: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(filteredEquipos.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
-  const paginatedEquipos = filteredEquipos.slice(startIndex, startIndex + pageSize);
+  const paginatedEquipos = filteredEquipos.slice(
+    startIndex,
+    startIndex + pageSize,
+  );
 
-  const handleExportExcel = () => {
-    const rows = filteredEquipos.map((equipo) => {
-      // Resolver nombre de operador igual que en la tabla
-      let operadorNombre = '';
-      if (typeof equipo.operador === 'string' && equipo.operador.trim()) {
+  const handleExportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Equipos");
+
+    worksheet.columns = [
+      { header: "ID", key: "id" },
+      { header: "Nombre", key: "nombre" },
+      { header: "N.º serie", key: "serie" },
+      { header: "Tecnico", key: "tecnico" },
+      { header: "Operador", key: "operador" },
+    ];
+
+    for (const equipo of filteredEquipos) {
+      let operadorNombre = "";
+      if (typeof equipo.operador === "string" && equipo.operador.trim()) {
         const parsed = Number(equipo.operador);
         if (isNaN(parsed)) {
           operadorNombre = equipo.operador;
         }
       }
 
-      if (!operadorNombre && equipo.operador && typeof equipo.operador === 'object') {
+      if (
+        !operadorNombre &&
+        equipo.operador &&
+        typeof equipo.operador === "object"
+      ) {
         const anyOperador = equipo.operador as any;
-        if (typeof anyOperador.nombre_operador === 'string' && anyOperador.nombre_operador.trim()) {
+        if (
+          typeof anyOperador.nombre_operador === "string" &&
+          anyOperador.nombre_operador.trim()
+        ) {
           operadorNombre = anyOperador.nombre_operador;
         }
       }
 
       if (!operadorNombre) {
         let opId: number | null = null;
-        if (typeof equipo.operador === 'number') {
+        if (typeof equipo.operador === "number") {
           opId = equipo.operador;
-        } else if (typeof equipo.operador === 'string' && equipo.operador) {
+        } else if (typeof equipo.operador === "string" && equipo.operador) {
           const parsed = Number(equipo.operador);
           opId = isNaN(parsed) ? null : parsed;
-        } else if (equipo.operador && typeof equipo.operador === 'object') {
+        } else if (equipo.operador && typeof equipo.operador === "object") {
           const maybeId = (equipo.operador as any).id_operador;
-          if (typeof maybeId === 'number') opId = maybeId;
+          if (typeof maybeId === "number") opId = maybeId;
         }
 
-        const op = opId != null ? operadores.find((o) => o.id_operador === opId) : undefined;
+        const op =
+          opId != null
+            ? operadores.find((o) => o.id_operador === opId)
+            : undefined;
         if (op) operadorNombre = op.nombre_operador;
       }
 
-      return {
-        ID: equipo.id_equipos,
-        Nombre: equipo.nombre,
-        'N.º serie': equipo.numero_serie_equipo,
-        Tecnico: equipo.tecnico,
-        Operador: operadorNombre,
-      };
-    });
+      worksheet.addRow({
+        id: equipo.id_equipos,
+        nombre: equipo.nombre,
+        serie: equipo.numero_serie_equipo,
+        tecnico: equipo.tecnico,
+        operador: operadorNombre,
+      });
+    }
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Equipos');
-    XLSX.writeFile(workbook, 'equipos.xlsx');
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "equipos.xlsx";
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,8 +254,10 @@ export const EquiposPage: React.FC = () => {
     if (!file) return;
 
     if (!importOperadorId) {
-      window.alert('Antes de importar el Excel, selecciona a qué operador se asignarán los equipos.');
-      e.target.value = '';
+      window.alert(
+        "Antes de importar el Excel, selecciona a qué operador se asignarán los equipos.",
+      );
+      e.target.value = "";
       return;
     }
 
@@ -222,10 +266,21 @@ export const EquiposPage: React.FC = () => {
 
     try {
       const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: '' });
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(data);
+      const worksheet = workbook.worksheets[0];
+      const rows: Record<string, any>[] = [];
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // Skip header
+        const rowData: Record<string, any> = {};
+        row.eachCell((cell, colNumber) => {
+          const header =
+            worksheet.getRow(1).getCell(colNumber).value?.toString() ||
+            `col${colNumber}`;
+          rowData[header] = cell.value;
+        });
+        rows.push(rowData);
+      });
 
       let createdCount = 0;
 
@@ -235,29 +290,29 @@ export const EquiposPage: React.FC = () => {
         Object.entries(row).forEach(([key, value]) => {
           const normalizedKey = key
             .toString()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '') // quitar tildes
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // quitar tildes
             .toLowerCase()
             .trim();
           normalizedRow[normalizedKey] = value;
         });
 
         const nombre = (
-          normalizedRow['nombre'] ??
-          normalizedRow['nombre equipo'] ??
-          normalizedRow['producto'] ??
-          ''
+          normalizedRow["nombre"] ??
+          normalizedRow["nombre equipo"] ??
+          normalizedRow["producto"] ??
+          ""
         )
           .toString()
           .trim();
 
         const serie = (
-          normalizedRow['num serie'] ??
-          normalizedRow['nº serie'] ??
-          normalizedRow['n° serie'] ??
-          normalizedRow['numero de serie'] ??
-          normalizedRow['serie'] ??
-          ''
+          normalizedRow["num serie"] ??
+          normalizedRow["nº serie"] ??
+          normalizedRow["n° serie"] ??
+          normalizedRow["numero de serie"] ??
+          normalizedRow["serie"] ??
+          ""
         )
           .toString()
           .trim();
@@ -267,29 +322,29 @@ export const EquiposPage: React.FC = () => {
         }
 
         try {
-          await api.post('/equipos/', {
+          await api.post("/equipos/", {
             nombre,
             numero_serie_equipo: serie,
-            tecnico: 'stock',
+            tecnico: "stock",
             operador: Number(importOperadorId),
           });
           createdCount += 1;
         } catch (rowErr) {
-          console.error('Error creando equipo desde Excel', rowErr, row);
+          console.error("Error creando equipo desde Excel", rowErr, row);
         }
       }
 
       await loadEquipos();
-      e.target.value = '';
+      e.target.value = "";
 
       if (createdCount === 0) {
         setError(
-          'No se creó ningún equipo desde el Excel. Verifica que las columnas de nombre y número de serie tengan encabezados válidos (por ejemplo: "Nombre", "Num Serie").'
+          'No se creó ningún equipo desde el Excel. Verifica que las columnas de nombre y número de serie tengan encabezados válidos (por ejemplo: "Nombre", "Num Serie").',
         );
       }
     } catch (err) {
-      console.error('Error importando Excel de equipos', err);
-      setError('No se pudo importar el archivo Excel. Verifica el formato.');
+      console.error("Error importando Excel de equipos", err);
+      setError("No se pudo importar el archivo Excel. Verifica el formato.");
     } finally {
       setImporting(false);
     }
@@ -304,10 +359,10 @@ export const EquiposPage: React.FC = () => {
 
   const resetForm = () => {
     setEditing(null);
-    setFormNombre('');
-    setFormSerie('');
-    setFormTecnico('');
-    setFormOperador('');
+    setFormNombre("");
+    setFormSerie("");
+    setFormTecnico("");
+    setFormOperador("");
     setCurrentPage(1);
   };
 
@@ -320,8 +375,8 @@ export const EquiposPage: React.FC = () => {
     setEditing(equipo);
     setFormNombre(equipo.nombre);
     setFormSerie(equipo.numero_serie_equipo);
-    setFormTecnico(equipo.tecnico || '');
-    setFormOperador(equipo.operador ? String(equipo.operador) : '');
+    setFormTecnico(equipo.tecnico || "");
+    setFormOperador(equipo.operador ? String(equipo.operador) : "");
     setShowForm(true);
   };
 
@@ -332,8 +387,8 @@ export const EquiposPage: React.FC = () => {
       await api.delete(`/equipos/${equipo.id_equipos}/`);
       await loadEquipos();
     } catch (err) {
-      console.error('Error eliminando equipo', err);
-      setError('No se pudo eliminar el equipo.');
+      console.error("Error eliminando equipo", err);
+      setError("No se pudo eliminar el equipo.");
     }
   };
 
@@ -351,7 +406,7 @@ export const EquiposPage: React.FC = () => {
           operador: formOperador || null,
         });
       } else {
-        await api.post('/equipos/', {
+        await api.post("/equipos/", {
           nombre: formNombre,
           numero_serie_equipo: formSerie,
           tecnico: formTecnico,
@@ -363,8 +418,8 @@ export const EquiposPage: React.FC = () => {
       resetForm();
       setShowForm(false);
     } catch (err) {
-      console.error('Error guardando equipo', err);
-      setError('No se pudo guardar el equipo. Revisa los datos.');
+      console.error("Error guardando equipo", err);
+      setError("No se pudo guardar el equipo. Revisa los datos.");
     } finally {
       setSaving(false);
     }
@@ -403,7 +458,7 @@ export const EquiposPage: React.FC = () => {
               ))}
             </select>
             <label className="flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50 cursor-pointer">
-              <span>{importing ? 'Importando...' : 'Importar Excel'}</span>
+              <span>{importing ? "Importando..." : "Importar Excel"}</span>
               <input
                 type="file"
                 accept=".xlsx,.xls"
@@ -425,19 +480,35 @@ export const EquiposPage: React.FC = () => {
 
       {!showForm && (
         <div className="overflow-hidden rounded border border-slate-200 bg-white shadow animate-fade-in">
-          {loading && <p className="p-4 text-sm text-slate-500">Cargando equipos...</p>}
-          {error && !loading && <p className="p-4 text-sm text-red-500">{error}</p>}
+          {loading && (
+            <p className="p-4 text-sm text-slate-500">Cargando equipos...</p>
+          )}
+          {error && !loading && (
+            <p className="p-4 text-sm text-red-500">{error}</p>
+          )}
           {!loading && !error && (
             <>
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">ID</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">Nombre</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">N.º serie</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">Tecnico</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-700">Operador</th>
-                    <th className="px-4 py-2 text-right font-medium text-slate-700">Acciones</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      ID
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      Nombre
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      N.º serie
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      Tecnico
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-700">
+                      Operador
+                    </th>
+                    <th className="px-4 py-2 text-right font-medium text-slate-700">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -446,14 +517,25 @@ export const EquiposPage: React.FC = () => {
                       key={equipo.id_equipos}
                       className="border-t border-slate-200 transition-colors hover:bg-slate-50"
                     >
-                      <td className="px-4 py-2 text-slate-800">{equipo.id_equipos}</td>
-                      <td className="px-4 py-2 text-slate-800">{equipo.nombre}</td>
-                      <td className="px-4 py-2 text-slate-800">{equipo.numero_serie_equipo}</td>
-                      <td className="px-4 py-2 text-slate-800">{equipo.tecnico}</td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {equipo.id_equipos}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {equipo.nombre}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {equipo.numero_serie_equipo}
+                      </td>
+                      <td className="px-4 py-2 text-slate-800">
+                        {equipo.tecnico}
+                      </td>
                       <td className="px-4 py-2 text-slate-800">
                         {(() => {
                           // Caso 1: el backend ya devuelve directamente el nombre del operador como string
-                          if (typeof equipo.operador === 'string' && equipo.operador.trim()) {
+                          if (
+                            typeof equipo.operador === "string" &&
+                            equipo.operador.trim()
+                          ) {
                             const parsed = Number(equipo.operador);
                             // Si NO es un número válido, lo tomamos como nombre tal cual
                             if (isNaN(parsed)) {
@@ -462,27 +544,43 @@ export const EquiposPage: React.FC = () => {
                           }
 
                           // Caso 2: el backend devuelve objeto con nombre_operador
-                          if (equipo.operador && typeof equipo.operador === 'object') {
+                          if (
+                            equipo.operador &&
+                            typeof equipo.operador === "object"
+                          ) {
                             const anyOperador = equipo.operador as any;
-                            if (typeof anyOperador.nombre_operador === 'string' && anyOperador.nombre_operador.trim()) {
+                            if (
+                              typeof anyOperador.nombre_operador === "string" &&
+                              anyOperador.nombre_operador.trim()
+                            ) {
                               return anyOperador.nombre_operador;
                             }
                           }
 
                           // Caso 3: resolver por ID numérico usando la lista de operadores
                           let opId: number | null = null;
-                          if (typeof equipo.operador === 'number') {
+                          if (typeof equipo.operador === "number") {
                             opId = equipo.operador;
-                          } else if (typeof equipo.operador === 'string' && equipo.operador) {
+                          } else if (
+                            typeof equipo.operador === "string" &&
+                            equipo.operador
+                          ) {
                             const parsed = Number(equipo.operador);
                             opId = isNaN(parsed) ? null : parsed;
-                          } else if (equipo.operador && typeof equipo.operador === 'object') {
-                            const maybeId = (equipo.operador as any).id_operador;
-                            if (typeof maybeId === 'number') opId = maybeId;
+                          } else if (
+                            equipo.operador &&
+                            typeof equipo.operador === "object"
+                          ) {
+                            const maybeId = (equipo.operador as any)
+                              .id_operador;
+                            if (typeof maybeId === "number") opId = maybeId;
                           }
 
-                          const op = opId != null ? operadores.find((o) => o.id_operador === opId) : undefined;
-                          return op ? op.nombre_operador : '';
+                          const op =
+                            opId != null
+                              ? operadores.find((o) => o.id_operador === opId)
+                              : undefined;
+                          return op ? op.nombre_operador : "";
                         })()}
                       </td>
                       <td className="px-4 py-2 text-right space-x-2">
@@ -505,7 +603,10 @@ export const EquiposPage: React.FC = () => {
                   ))}
                   {equipos.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-4 text-center text-slate-500">
+                      <td
+                        colSpan={5}
+                        className="px-4 py-4 text-center text-slate-500"
+                      >
                         No hay equipos registrados.
                       </td>
                     </tr>
@@ -531,24 +632,28 @@ export const EquiposPage: React.FC = () => {
                   >
                     ‹
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() => setCurrentPage(page)}
-                      className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
-                        page === safeCurrentPage
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-white text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setCurrentPage(page)}
+                        className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
+                          page === safeCurrentPage
+                            ? "bg-primary-500 text-white"
+                            : "bg-white text-slate-700 hover:bg-slate-100"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ),
+                  )}
                   <button
                     type="button"
                     className="rounded px-2 py-1 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={safeCurrentPage === totalPages}
                   >
                     ›
@@ -571,11 +676,14 @@ export const EquiposPage: React.FC = () => {
       {showForm && (
         <div className="rounded border border-slate-200 bg-white p-4 shadow animate-fade-in">
           <h2 className="mb-3 text-lg font-medium">
-            {editing ? 'Editar equipo' : 'Nuevo equipo'}
+            {editing ? "Editar equipo" : "Nuevo equipo"}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="nombre">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="nombre"
+              >
                 Nombre
               </label>
               <input
@@ -589,7 +697,10 @@ export const EquiposPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="tecnico">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="tecnico"
+              >
                 Tecnico
               </label>
               <select
@@ -600,7 +711,10 @@ export const EquiposPage: React.FC = () => {
               >
                 <option value="">Sin tecnico asignado</option>
                 {tecnicos.map((tecnico) => (
-                  <option key={tecnico.id_tecnico} value={tecnico.nombre_tecnico}>
+                  <option
+                    key={tecnico.id_tecnico}
+                    value={tecnico.nombre_tecnico}
+                  >
                     {tecnico.nombre_tecnico} ({tecnico.id_tecnico_empresa})
                   </option>
                 ))}
@@ -608,7 +722,10 @@ export const EquiposPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="operador">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="operador"
+              >
                 Operador
               </label>
               <select
@@ -619,14 +736,20 @@ export const EquiposPage: React.FC = () => {
               >
                 <option value="">Sin operador asignado</option>
                 {operadores.map((operador) => (
-                  <option key={operador.id_operador} value={operador.id_operador}>
+                  <option
+                    key={operador.id_operador}
+                    value={operador.id_operador}
+                  >
                     {operador.nombre_operador}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="serie">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="serie"
+              >
                 Número de serie
               </label>
               <input
@@ -666,7 +789,7 @@ export const EquiposPage: React.FC = () => {
                 disabled={saving}
                 className="rounded border border-primary-500 bg-white px-4 py-2 text-xs font-medium text-slate-800 shadow hover:bg-primary-50 disabled:opacity-60"
               >
-                {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
+                {saving ? "Guardando..." : editing ? "Actualizar" : "Crear"}
               </button>
             </div>
           </form>

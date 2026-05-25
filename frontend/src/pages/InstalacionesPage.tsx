@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import * as XLSX from 'xlsx';
-import { api } from '../api/client';
+import React, { useEffect, useState } from "react";
+import ExcelJS from "exceljs";
+import { api } from "../api/client";
 
 interface Instalacion {
   id_instalaciones: number;
@@ -36,21 +36,23 @@ export const InstalacionesPage: React.FC = () => {
 
   const [importing, setImporting] = useState(false);
 
-  const [serie, setSerie] = useState('');
-  const [orden, setOrden] = useState('');
-  const [fechaCierre, setFechaCierre] = useState('');
-  const [idTecnicoEmpresa, setIdTecnicoEmpresa] = useState('');
-  const [nombreTecnico, setNombreTecnico] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [tipo, setTipo] = useState('');
-  const [tipoOrden, setTipoOrden] = useState('');
+  const [serie, setSerie] = useState("");
+  const [orden, setOrden] = useState("");
+  const [fechaCierre, setFechaCierre] = useState("");
+  const [idTecnicoEmpresa, setIdTecnicoEmpresa] = useState("");
+  const [nombreTecnico, setNombreTecnico] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [tipo, setTipo] = useState("");
+  const [tipoOrden, setTipoOrden] = useState("");
 
   const [editing, setEditing] = useState<Instalacion | null>(null);
 
   const [ordenes, setOrdenes] = useState<OrdenResumen[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-  const [search, setSearch] = useState('');
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
@@ -58,12 +60,12 @@ export const InstalacionesPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/instalaciones/');
+      const response = await api.get("/instalaciones/");
       const data = (response.data?.results ?? response.data) as Instalacion[];
       setInstalaciones(data);
     } catch (err) {
-      console.error('Error cargando instalaciones', err);
-      setError('No se pudieron cargar las instalaciones.');
+      console.error("Error cargando instalaciones", err);
+      setError("No se pudieron cargar las instalaciones.");
     } finally {
       setLoading(false);
     }
@@ -71,77 +73,98 @@ export const InstalacionesPage: React.FC = () => {
 
   const loadTecnicos = async () => {
     try {
-      const response = await api.get('/tecnicos/');
+      const response = await api.get("/tecnicos/");
       const data = (response.data?.results ?? response.data) as Tecnico[];
       setTecnicos(data);
     } catch (err) {
-      console.error('Error cargando técnicos para instalaciones', err);
+      console.error("Error cargando técnicos para instalaciones", err);
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     // Agrupar por número de orden base y calcular totales técnico / empresa por grupo
-    const grupos = filteredInstalaciones.reduce<Record<string, Instalacion[]>>((acc, inst) => {
-      const baseOrden = inst.numero_de_orden.split('_DUPLI')[0];
-      if (!acc[baseOrden]) acc[baseOrden] = [];
-      acc[baseOrden].push(inst);
-      return acc;
-    }, {});
+    const grupos = filteredInstalaciones.reduce<Record<string, Instalacion[]>>(
+      (acc, inst) => {
+        const baseOrden = inst.numero_de_orden.split("_DUPLI")[0];
+        if (!acc[baseOrden]) acc[baseOrden] = [];
+        acc[baseOrden].push(inst);
+        return acc;
+      },
+      {},
+    );
 
     const parseMonto = (valor: string | null) => {
       if (!valor) return 0;
       const limpio = valor
-        .replace(/[^0-9,.-]/g, '')
-        .replace(/\.(?=\d{3}(?:\D|$))/g, '')
-        .replace(',', '.');
+        .replace(/[^0-9,.-]/g, "")
+        .replace(/\.(?=\d{3}(?:\D|$))/g, "")
+        .replace(",", ".");
       const n = parseFloat(limpio);
       return isNaN(n) ? 0 : n;
     };
 
-    const rows: any[] = [];
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Instalaciones");
+
+    worksheet.columns = [
+      { header: "N.º serie equipo", key: "serie" },
+      { header: "N.º orden", key: "orden" },
+      { header: "Fecha cierre", key: "fecha" },
+      { header: "Nombre técnico", key: "tecnico" },
+      { header: "Tipo orden", key: "tipo" },
+      { header: "Total técnico grupo", key: "totalTec" },
+      { header: "Total empresa grupo", key: "totalEmp" },
+    ];
 
     Object.entries(grupos).forEach(([baseOrden, items]) => {
       // Calcular totales del grupo como en la tabla
       const totales = items.reduce(
         (acc, inst) => {
           if (!inst.tipo_orden) return acc;
-          const ordenDetalle = ordenes.find((o) => o.tipo_orden === inst.tipo_orden);
+          const ordenDetalle = ordenes.find(
+            (o) => o.tipo_orden === inst.tipo_orden,
+          );
           if (!ordenDetalle) return acc;
 
           acc.totalTec += parseMonto(ordenDetalle.valor_orden_tecnico);
           acc.totalEmp += parseMonto(ordenDetalle.valor_orden_empresa);
           return acc;
         },
-        { totalTec: 0, totalEmp: 0 }
+        { totalTec: 0, totalEmp: 0 },
       );
 
       items.forEach((inst) => {
-        rows.push({
-          'N.º serie equipo': inst.numero_serie_equipo,
-          // Usar siempre el número de orden base para que en Excel coincida con el agrupado
-          'N.º orden': baseOrden,
-          'Fecha cierre': inst.fecha_cierre ?? '',
-          'Nombre técnico': inst.nombre_tecnico,
-          'Tipo orden': inst.tipo_orden ?? '',
-          'Total técnico grupo': totales.totalTec,
-          'Total empresa grupo': totales.totalEmp,
+        worksheet.addRow({
+          serie: inst.numero_serie_equipo,
+          orden: baseOrden,
+          fecha: inst.fecha_cierre ?? "",
+          tecnico: inst.nombre_tecnico,
+          tipo: inst.tipo_orden ?? "",
+          totalTec: totales.totalTec,
+          totalEmp: totales.totalEmp,
         });
       });
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Instalaciones');
-    XLSX.writeFile(workbook, 'instalaciones.xlsx');
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "instalaciones.xlsx";
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const loadOrdenes = async () => {
     try {
-      const response = await api.get('/ordenes/');
+      const response = await api.get("/ordenes/");
       const data = (response.data?.results ?? response.data) as OrdenResumen[];
       setOrdenes(data);
     } catch (err) {
-      console.error('Error cargando órdenes para instalaciones', err);
+      console.error("Error cargando órdenes para instalaciones", err);
     }
   };
 
@@ -153,14 +176,14 @@ export const InstalacionesPage: React.FC = () => {
 
   const startCreate = () => {
     setEditing(null);
-    setSerie('');
-    setOrden('');
-    setFechaCierre('');
-    setIdTecnicoEmpresa('');
-    setNombreTecnico('');
-    setDescripcion('');
-    setTipo('');
-    setTipoOrden('');
+    setSerie("");
+    setOrden("");
+    setFechaCierre("");
+    setIdTecnicoEmpresa("");
+    setNombreTecnico("");
+    setDescripcion("");
+    setTipo("");
+    setTipoOrden("");
     setShowForm(true);
   };
 
@@ -168,24 +191,25 @@ export const InstalacionesPage: React.FC = () => {
     setEditing(inst);
     setSerie(inst.numero_serie_equipo);
     setOrden(inst.numero_de_orden);
-    setFechaCierre(inst.fecha_cierre ?? '');
+    setFechaCierre(inst.fecha_cierre ?? "");
     setIdTecnicoEmpresa(inst.id_tecnico_empresa);
     setNombreTecnico(inst.nombre_tecnico);
-    setDescripcion(inst.descripcion ?? '');
-    setTipo(inst.tipo ?? '');
-    setTipoOrden(inst.tipo_orden ?? '');
+    setDescripcion(inst.descripcion ?? "");
+    setTipo(inst.tipo ?? "");
+    setTipoOrden(inst.tipo_orden ?? "");
     setShowForm(true);
   };
 
   const handleDelete = async (inst: Instalacion) => {
-    if (!window.confirm(`¿Eliminar la instalación #${inst.id_instalaciones}?`)) return;
+    if (!window.confirm(`¿Eliminar la instalación #${inst.id_instalaciones}?`))
+      return;
 
     try {
       await api.delete(`/instalaciones/${inst.id_instalaciones}/`);
       await loadInstalaciones();
     } catch (err) {
-      console.error('Error eliminando instalación', err);
-      setError('No se pudo eliminar la instalación.');
+      console.error("Error eliminando instalación", err);
+      setError("No se pudo eliminar la instalación.");
     }
   };
 
@@ -198,16 +222,31 @@ export const InstalacionesPage: React.FC = () => {
 
     try {
       const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(data);
+      const worksheet = workbook.worksheets[0];
+      const rows: any[] = [];
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // Skip header
+        const rowData: any = {};
+        row.eachCell((cell, colNumber) => {
+          const header =
+            worksheet.getRow(1).getCell(colNumber).value?.toString() ||
+            `col${colNumber}`;
+          rowData[header] = cell.value;
+        });
+        rows.push(rowData);
+      });
 
       // Cargar inventario de equipos para validar / eliminar según N.º de serie
-      let equiposPorSerie = new Map<string, { id_equipos: number; nombre: string }>();
+      let equiposPorSerie = new Map<
+        string,
+        { id_equipos: number; nombre: string }
+      >();
       try {
-        const equiposRes = await api.get('/equipos/');
-        const equiposData = (equiposRes.data?.results ?? equiposRes.data) as Array<{
+        const equiposRes = await api.get("/equipos/");
+        const equiposData = (equiposRes.data?.results ??
+          equiposRes.data) as Array<{
           id_equipos: number;
           nombre: string;
           numero_serie_equipo: string;
@@ -221,7 +260,10 @@ export const InstalacionesPage: React.FC = () => {
           }
         });
       } catch (equipErr) {
-        console.error('No se pudo cargar el inventario de equipos para validar durante la importación', equipErr);
+        console.error(
+          "No se pudo cargar el inventario de equipos para validar durante la importación",
+          equipErr,
+        );
         equiposPorSerie = new Map();
       }
 
@@ -232,7 +274,7 @@ export const InstalacionesPage: React.FC = () => {
       const seriesInstalacionesExistentes = new Set(
         instalaciones
           .map((inst) => inst.numero_serie_equipo?.trim())
-          .filter((s): s is string => !!s)
+          .filter((s): s is string => !!s),
       );
 
       // Conjunto para detectar duplicados dentro del propio archivo Excel (por número de serie original)
@@ -245,21 +287,21 @@ export const InstalacionesPage: React.FC = () => {
 
       for (const row of rows) {
         // Leer valores crudos del Excel
-        let numeroDeOrden = String(row['Administrativo'] || '').trim();
-        const fechaCierreExcel = String(row['F.Cierre'] || '').trim();
-        let idTecnicoEmp = String(row['Instalador'] || '').trim();
-        let nombreTec = String(row['Nombre'] || '').trim();
-        const descripcionInst = String(row['Descripción'] || '').trim();
-        const numSerieOriginal = String(row['Num Serie'] || '').trim();
+        let numeroDeOrden = String(row["Administrativo"] || "").trim();
+        const fechaCierreExcel = String(row["F.Cierre"] || "").trim();
+        let idTecnicoEmp = String(row["Instalador"] || "").trim();
+        let nombreTec = String(row["Nombre"] || "").trim();
+        const descripcionInst = String(row["Descripción"] || "").trim();
+        const numSerieOriginal = String(row["Num Serie"] || "").trim();
         let numSerie = numSerieOriginal;
-        let tipoInst = String(row['Tipo'] || '').trim();
-        let tipoOrdenExcel = String(row['Actuación'] || '').trim();
+        let tipoInst = String(row["Tipo"] || "").trim();
+        let tipoOrdenExcel = String(row["Actuación"] || "").trim();
 
         // Si faltan campos clave, rellenar con 'NA' para no perder filas
-        if (!numeroDeOrden) numeroDeOrden = 'NA';
-        if (!idTecnicoEmp) idTecnicoEmp = 'NA';
-        if (!nombreTec) nombreTec = 'NA';
-        if (!numSerie) numSerie = 'NA';
+        if (!numeroDeOrden) numeroDeOrden = "NA";
+        if (!idTecnicoEmp) idTecnicoEmp = "NA";
+        if (!nombreTec) nombreTec = "NA";
+        if (!numSerie) numSerie = "NA";
 
         // Gestionar duplicados de número de orden: mismo valor en varias filas del Excel
         const originalOrderKey = numeroDeOrden;
@@ -279,12 +321,14 @@ export const InstalacionesPage: React.FC = () => {
         serieCounts[originalSerieKey] = currentSerieCount + 1;
 
         // Respetar max_length del modelo Django para evitar errores de validación
-        if (numeroDeOrden.length > 100) numeroDeOrden = numeroDeOrden.slice(0, 100);
+        if (numeroDeOrden.length > 100)
+          numeroDeOrden = numeroDeOrden.slice(0, 100);
         if (numSerie.length > 100) numSerie = numSerie.slice(0, 100);
         if (idTecnicoEmp.length > 50) idTecnicoEmp = idTecnicoEmp.slice(0, 50);
         if (nombreTec.length > 150) nombreTec = nombreTec.slice(0, 150);
         if (tipoInst.length > 100) tipoInst = tipoInst.slice(0, 100);
-        if (tipoOrdenExcel.length > 100) tipoOrdenExcel = tipoOrdenExcel.slice(0, 100);
+        if (tipoOrdenExcel.length > 100)
+          tipoOrdenExcel = tipoOrdenExcel.slice(0, 100);
 
         let fechaCierreApi: string | null = null;
         if (fechaCierreExcel) {
@@ -299,7 +343,7 @@ export const InstalacionesPage: React.FC = () => {
           const equipo = equiposPorSerie.get(numSerieOriginal.trim());
           if (!equipo) {
             ordenesConEquipoInexistente.push(
-              `Orden ${numeroDeOrden}: el equipo con N.º de serie "${numSerieOriginal}" no existe en el inventario`
+              `Orden ${numeroDeOrden}: el equipo con N.º de serie "${numSerieOriginal}" no existe en el inventario`,
             );
           }
 
@@ -308,14 +352,14 @@ export const InstalacionesPage: React.FC = () => {
           // Avisar si la serie ya estaba en otra instalación antes de importar
           if (seriesInstalacionesExistentes.has(serieClave)) {
             seriesDuplicadasInstalaciones.push(
-              `Orden ${numeroDeOrden}: el número de serie "${numSerieOriginal}" ya está asociado a otra instalación.`
+              `Orden ${numeroDeOrden}: el número de serie "${numSerieOriginal}" ya está asociado a otra instalación.`,
             );
           }
 
           // Avisar si la misma serie aparece más de una vez en el mismo archivo Excel
           if (seriesVistasEnExcel.has(serieClave)) {
             seriesDuplicadasInstalaciones.push(
-              `Orden ${numeroDeOrden}: el número de serie "${numSerieOriginal}" se repite en el archivo Excel.`
+              `Orden ${numeroDeOrden}: el número de serie "${numSerieOriginal}" se repite en el archivo Excel.`,
             );
           } else {
             seriesVistasEnExcel.add(serieClave);
@@ -323,7 +367,7 @@ export const InstalacionesPage: React.FC = () => {
         }
 
         try {
-          await api.post('/instalaciones/', {
+          await api.post("/instalaciones/", {
             numero_serie_equipo: numSerie,
             numero_de_orden: numeroDeOrden,
             fecha_cierre: fechaCierreApi,
@@ -334,7 +378,11 @@ export const InstalacionesPage: React.FC = () => {
             tipo_orden: tipoOrdenExcel || null,
           });
         } catch (rowError) {
-          console.error('Error creando instalación desde Excel para orden', numeroDeOrden, rowError);
+          console.error(
+            "Error creando instalación desde Excel para orden",
+            numeroDeOrden,
+            rowError,
+          );
         }
       }
 
@@ -343,26 +391,31 @@ export const InstalacionesPage: React.FC = () => {
       const mensajes: string[] = [];
       if (ordenesConEquipoInexistente.length > 0) {
         mensajes.push(
-          'Instalaciones cuyo equipo no existe en el inventario de equipos:\n' +
-            ordenesConEquipoInexistente.join('\n')
+          "Instalaciones cuyo equipo no existe en el inventario de equipos:\n" +
+            ordenesConEquipoInexistente.join("\n"),
         );
       }
       if (seriesDuplicadasInstalaciones.length > 0) {
         mensajes.push(
-          'Instalaciones que reutilizan un número de serie ya utilizado en otra instalación o repetido en el Excel:\n' +
-            seriesDuplicadasInstalaciones.join('\n')
+          "Instalaciones que reutilizan un número de serie ya utilizado en otra instalación o repetido en el Excel:\n" +
+            seriesDuplicadasInstalaciones.join("\n"),
         );
       }
 
       if (mensajes.length > 0) {
-        window.alert('Durante la importación se encontraron las siguientes incidencias:\n\n' + mensajes.join('\n\n'));
+        window.alert(
+          "Durante la importación se encontraron las siguientes incidencias:\n\n" +
+            mensajes.join("\n\n"),
+        );
       }
     } catch (err) {
-      console.error('Error importando instalaciones desde Excel', err);
-      setError('No se pudo importar el archivo Excel de instalaciones. Verifica el formato.');
+      console.error("Error importando instalaciones desde Excel", err);
+      setError(
+        "No se pudo importar el archivo Excel de instalaciones. Verifica el formato.",
+      );
     } finally {
       setImporting(false);
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
@@ -386,29 +439,29 @@ export const InstalacionesPage: React.FC = () => {
       if (editing) {
         await api.put(`/instalaciones/${editing.id_instalaciones}/`, payload);
       } else {
-        await api.post('/instalaciones/', payload);
+        await api.post("/instalaciones/", payload);
       }
-      setSerie('');
-      setOrden('');
-      setFechaCierre('');
-      setIdTecnicoEmpresa('');
-      setNombreTecnico('');
-      setDescripcion('');
-      setTipo('');
-      setTipoOrden('');
+      setSerie("");
+      setOrden("");
+      setFechaCierre("");
+      setIdTecnicoEmpresa("");
+      setNombreTecnico("");
+      setDescripcion("");
+      setTipo("");
+      setTipoOrden("");
       await loadInstalaciones();
       setEditing(null);
       setShowForm(false);
     } catch (err) {
-      console.error('Error guardando instalación', err);
-      setError('No se pudo guardar la instalación. Revisa los datos.');
+      console.error("Error guardando instalación", err);
+      setError("No se pudo guardar la instalación. Revisa los datos.");
     } finally {
       setSaving(false);
     }
   };
 
   const selectedOrden = tipoOrden
-    ? ordenes.find((o) => o.tipo_orden === tipoOrden) ?? null
+    ? (ordenes.find((o) => o.tipo_orden === tipoOrden) ?? null)
     : null;
 
   const filteredInstalaciones = instalaciones.filter((inst) => {
@@ -418,24 +471,26 @@ export const InstalacionesPage: React.FC = () => {
       inst.numero_serie_equipo.toLowerCase().includes(term) ||
       inst.numero_de_orden.toLowerCase().includes(term) ||
       inst.nombre_tecnico.toLowerCase().includes(term) ||
-      (inst.tipo_orden ?? '').toLowerCase().includes(term)
+      (inst.tipo_orden ?? "").toLowerCase().includes(term)
     );
   });
 
   const totalGroups = Object.keys(
     filteredInstalaciones.reduce<Record<string, true>>((acc, inst) => {
-      const baseOrden = inst.numero_de_orden.split('_DUPLI')[0];
+      const baseOrden = inst.numero_de_orden.split("_DUPLI")[0];
       acc[baseOrden] = true;
       return acc;
-    }, {})
+    }, {}),
   ).length;
 
   const totalPages = Math.max(1, Math.ceil(totalGroups / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
   // Agrupar instalaciones filtradas por número de orden base (antes de sufijo _DUPLI)
-  const groupedByOrden = filteredInstalaciones.reduce<Record<string, Instalacion[]>>((acc, inst) => {
-    const baseOrden = inst.numero_de_orden.split('_DUPLI')[0];
+  const groupedByOrden = filteredInstalaciones.reduce<
+    Record<string, Instalacion[]>
+  >((acc, inst) => {
+    const baseOrden = inst.numero_de_orden.split("_DUPLI")[0];
     if (!acc[baseOrden]) acc[baseOrden] = [];
     acc[baseOrden].push(inst);
     return acc;
@@ -443,7 +498,10 @@ export const InstalacionesPage: React.FC = () => {
 
   const allGroupKeys = Object.keys(groupedByOrden).sort();
   const startIndex = (safeCurrentPage - 1) * pageSize;
-  const paginatedGroupKeys = allGroupKeys.slice(startIndex, startIndex + pageSize);
+  const paginatedGroupKeys = allGroupKeys.slice(
+    startIndex,
+    startIndex + pageSize,
+  );
 
   const toggleGroup = (baseOrden: string) => {
     setExpandedGroups((prev) => ({
@@ -474,7 +532,7 @@ export const InstalacionesPage: React.FC = () => {
                 Exportar Excel
               </button>
               <label className="inline-flex cursor-pointer items-center justify-center rounded border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow hover:bg-slate-50">
-                <span>{importing ? 'Importando...' : 'Importar Excel'}</span>
+                <span>{importing ? "Importando..." : "Importar Excel"}</span>
                 <input
                   type="file"
                   accept=".xlsx,.xls"
@@ -497,17 +555,33 @@ export const InstalacionesPage: React.FC = () => {
 
       {!showForm && (
         <div className="overflow-hidden rounded border border-slate-200 bg-white shadow">
-          {loading && <p className="p-4 text-sm text-slate-500">Cargando instalaciones...</p>}
-          {error && !loading && <p className="p-4 text-sm text-red-500">{error}</p>}
+          {loading && (
+            <p className="p-4 text-sm text-slate-500">
+              Cargando instalaciones...
+            </p>
+          )}
+          {error && !loading && (
+            <p className="p-4 text-sm text-red-500">{error}</p>
+          )}
           {!loading && !error && (
             <table className="min-w-full text-xs md:text-sm">
               <thead className="bg-slate-100">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium text-slate-700">N.º serie equipo</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-700">N.º orden</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-700">Nombre técnico</th>
-                  <th className="px-4 py-2 text-left font-medium text-slate-700">Tipo orden</th>
-                  <th className="px-4 py-2 text-right font-medium text-slate-700">Acciones</th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">
+                    N.º serie equipo
+                  </th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">
+                    N.º orden
+                  </th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">
+                    Nombre técnico
+                  </th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">
+                    Tipo orden
+                  </th>
+                  <th className="px-4 py-2 text-right font-medium text-slate-700">
+                    Acciones
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -519,28 +593,34 @@ export const InstalacionesPage: React.FC = () => {
                   const { totalTec, totalEmp } = items.reduce(
                     (acc, inst) => {
                       if (!inst.tipo_orden) return acc;
-                      const ordenDetalle = ordenes.find((o) => o.tipo_orden === inst.tipo_orden);
+                      const ordenDetalle = ordenes.find(
+                        (o) => o.tipo_orden === inst.tipo_orden,
+                      );
                       if (!ordenDetalle) return acc;
 
                       const parseMonto = (valor: string | null) => {
                         if (!valor) return 0;
                         const limpio = valor
-                          .replace(/[^0-9,.-]/g, '')
-                          .replace(/\.(?=\d{3}(?:\D|$))/g, '')
-                          .replace(',', '.');
+                          .replace(/[^0-9,.-]/g, "")
+                          .replace(/\.(?=\d{3}(?:\D|$))/g, "")
+                          .replace(",", ".");
                         const n = parseFloat(limpio);
                         return isNaN(n) ? 0 : n;
                       };
 
-                      acc.totalTec += parseMonto(ordenDetalle.valor_orden_tecnico);
-                      acc.totalEmp += parseMonto(ordenDetalle.valor_orden_empresa);
+                      acc.totalTec += parseMonto(
+                        ordenDetalle.valor_orden_tecnico,
+                      );
+                      acc.totalEmp += parseMonto(
+                        ordenDetalle.valor_orden_empresa,
+                      );
                       return acc;
                     },
-                    { totalTec: 0, totalEmp: 0 }
+                    { totalTec: 0, totalEmp: 0 },
                   );
 
                   const formatMonto = (n: number) => {
-                    return n.toLocaleString('es-ES', {
+                    return n.toLocaleString("es-ES", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     });
@@ -552,13 +632,19 @@ export const InstalacionesPage: React.FC = () => {
                         className="bg-slate-50 cursor-pointer hover:bg-slate-100"
                         onClick={() => toggleGroup(baseOrden)}
                       >
-                        <td colSpan={5} className="px-4 py-2 text-xs font-semibold text-primary-700">
-                          <span className="mr-2 text-slate-600">{isOpen ? '▾' : '▸'}</span>
+                        <td
+                          colSpan={5}
+                          className="px-4 py-2 text-xs font-semibold text-primary-700"
+                        >
+                          <span className="mr-2 text-slate-600">
+                            {isOpen ? "▾" : "▸"}
+                          </span>
                           N.º orden: {baseOrden} ({items.length} instalación
-                          {items.length > 1 ? 'es' : ''})
+                          {items.length > 1 ? "es" : ""})
                           {totalTec > 0 || totalEmp > 0 ? (
                             <span className="ml-4 text-[11px] text-emerald-600">
-                              Total técnico: ${formatMonto(totalTec)} | Total empresa: ${formatMonto(totalEmp)}
+                              Total técnico: ${formatMonto(totalTec)} | Total
+                              empresa: ${formatMonto(totalEmp)}
                             </span>
                           ) : null}
                         </td>
@@ -566,16 +652,26 @@ export const InstalacionesPage: React.FC = () => {
                       {isOpen &&
                         items.map((inst) => {
                           const ordenDetalle = inst.tipo_orden
-                            ? ordenes.find((o) => o.tipo_orden === inst.tipo_orden) ?? null
+                            ? (ordenes.find(
+                                (o) => o.tipo_orden === inst.tipo_orden,
+                              ) ?? null)
                             : null;
 
                           return (
                             <React.Fragment key={inst.id_instalaciones}>
                               <tr className="border-t border-slate-200 hover:bg-slate-50">
-                                <td className="px-4 py-2 text-slate-800">{inst.numero_serie_equipo}</td>
-                                <td className="px-4 py-2 text-slate-800">{inst.numero_de_orden}</td>
-                                <td className="px-4 py-2 text-slate-800">{inst.nombre_tecnico}</td>
-                                <td className="px-4 py-2 text-slate-800">{inst.tipo_orden ?? '-'}</td>
+                                <td className="px-4 py-2 text-slate-800">
+                                  {inst.numero_serie_equipo}
+                                </td>
+                                <td className="px-4 py-2 text-slate-800">
+                                  {inst.numero_de_orden}
+                                </td>
+                                <td className="px-4 py-2 text-slate-800">
+                                  {inst.nombre_tecnico}
+                                </td>
+                                <td className="px-4 py-2 text-slate-800">
+                                  {inst.tipo_orden ?? "-"}
+                                </td>
                                 <td className="px-4 py-2 text-right space-x-2">
                                   <button
                                     type="button"
@@ -595,14 +691,18 @@ export const InstalacionesPage: React.FC = () => {
                               </tr>
                               {ordenDetalle && (
                                 <tr className="border-t border-slate-200 bg-slate-50">
-                                  <td colSpan={5} className="px-6 py-2 text-xs text-slate-700">
+                                  <td
+                                    colSpan={5}
+                                    className="px-6 py-2 text-xs text-slate-700"
+                                  >
                                     <div className="grid gap-2 md:grid-cols-2">
                                       <div>
                                         <span className="block font-medium text-slate-800">
                                           Valor de la orden para el técnico
                                         </span>
                                         <span className="block whitespace-pre-wrap text-slate-700">
-                                          {ordenDetalle.valor_orden_tecnico ?? ''}
+                                          {ordenDetalle.valor_orden_tecnico ??
+                                            ""}
                                         </span>
                                       </div>
                                       <div>
@@ -610,7 +710,8 @@ export const InstalacionesPage: React.FC = () => {
                                           Valor de la orden para la empresa
                                         </span>
                                         <span className="block whitespace-pre-wrap text-slate-300">
-                                          {ordenDetalle.valor_orden_empresa ?? ''}
+                                          {ordenDetalle.valor_orden_empresa ??
+                                            ""}
                                         </span>
                                       </div>
                                     </div>
@@ -625,7 +726,10 @@ export const InstalacionesPage: React.FC = () => {
                 })}
                 {instalaciones.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-4 text-center text-slate-500">
+                    <td
+                      colSpan={8}
+                      className="px-4 py-4 text-center text-slate-500"
+                    >
                       No hay instalaciones registradas.
                     </td>
                   </tr>
@@ -661,8 +765,8 @@ export const InstalacionesPage: React.FC = () => {
               onClick={() => setCurrentPage(page)}
               className={`min-w-[2rem] rounded px-2 py-1 text-xs ${
                 page === safeCurrentPage
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-white text-slate-700 hover:bg-slate-100'
+                  ? "bg-primary-500 text-white"
+                  : "bg-white text-slate-700 hover:bg-slate-100"
               }`}
             >
               {page}
@@ -689,10 +793,15 @@ export const InstalacionesPage: React.FC = () => {
 
       {showForm && (
         <div className="rounded border border-slate-200 bg-white p-4 shadow">
-          <h2 className="mb-3 text-lg font-medium">{editing ? 'Editar instalación' : 'Nueva instalación'}</h2>
+          <h2 className="mb-3 text-lg font-medium">
+            {editing ? "Editar instalación" : "Nueva instalación"}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="serie-inst">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="serie-inst"
+              >
                 Número de serie del equipo
               </label>
               <input
@@ -707,7 +816,10 @@ export const InstalacionesPage: React.FC = () => {
 
             <div className="grid gap-3 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="fecha-cierre">
+                <label
+                  className="mb-1 block text-xs font-medium text-slate-700"
+                  htmlFor="fecha-cierre"
+                >
                   Fecha de cierre (opcional)
                 </label>
                 <input
@@ -719,7 +831,10 @@ export const InstalacionesPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="id-tec-emp">
+                <label
+                  className="mb-1 block text-xs font-medium text-slate-700"
+                  htmlFor="id-tec-emp"
+                >
                   ID técnico empresa
                 </label>
                 <input
@@ -735,7 +850,10 @@ export const InstalacionesPage: React.FC = () => {
 
             <div className="grid gap-3 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="nombre-tec">
+                <label
+                  className="mb-1 block text-xs font-medium text-slate-700"
+                  htmlFor="nombre-tec"
+                >
                   Nombre técnico
                 </label>
                 <div className="relative">
@@ -745,7 +863,9 @@ export const InstalacionesPage: React.FC = () => {
                     onChange={(e) => {
                       const value = e.target.value;
                       setNombreTecnico(value);
-                      const tec = tecnicos.find((t) => t.nombre_tecnico === value);
+                      const tec = tecnicos.find(
+                        (t) => t.nombre_tecnico === value,
+                      );
                       if (tec) {
                         setIdTecnicoEmpresa(tec.id_tecnico_empresa);
                       }
@@ -759,9 +879,12 @@ export const InstalacionesPage: React.FC = () => {
                         {tec.nombre_tecnico} ({tec.id_tecnico_empresa})
                       </option>
                     ))}
-                    {nombreTecnico && !tecnicos.some((t) => t.nombre_tecnico === nombreTecnico) && (
-                      <option value={nombreTecnico}>{nombreTecnico}</option>
-                    )}
+                    {nombreTecnico &&
+                      !tecnicos.some(
+                        (t) => t.nombre_tecnico === nombreTecnico,
+                      ) && (
+                        <option value={nombreTecnico}>{nombreTecnico}</option>
+                      )}
                   </select>
                   <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-slate-400 text-xs">
                     ▼
@@ -769,7 +892,10 @@ export const InstalacionesPage: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="tipo-inst">
+                <label
+                  className="mb-1 block text-xs font-medium text-slate-700"
+                  htmlFor="tipo-inst"
+                >
                   Tipo (opcional)
                 </label>
                 <input
@@ -783,7 +909,10 @@ export const InstalacionesPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="tipo-orden-inst">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="tipo-orden-inst"
+              >
                 Tipo de orden (opcional)
               </label>
               <select
@@ -808,7 +937,7 @@ export const InstalacionesPage: React.FC = () => {
                     Valor de la orden para el técnico
                   </label>
                   <textarea
-                    value={selectedOrden.valor_orden_tecnico ?? ''}
+                    value={selectedOrden.valor_orden_tecnico ?? ""}
                     readOnly
                     rows={2}
                     className="w-full cursor-default rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
@@ -819,7 +948,7 @@ export const InstalacionesPage: React.FC = () => {
                     Valor de la orden para la empresa
                   </label>
                   <textarea
-                    value={selectedOrden.valor_orden_empresa ?? ''}
+                    value={selectedOrden.valor_orden_empresa ?? ""}
                     readOnly
                     rows={2}
                     className="w-full cursor-default rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
@@ -829,7 +958,10 @@ export const InstalacionesPage: React.FC = () => {
             )}
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="desc-inst">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="desc-inst"
+              >
                 Descripción (opcional)
               </label>
               <textarea
@@ -841,7 +973,10 @@ export const InstalacionesPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700" htmlFor="orden-inst">
+              <label
+                className="mb-1 block text-xs font-medium text-slate-700"
+                htmlFor="orden-inst"
+              >
                 Número de orden
               </label>
               <input
@@ -872,7 +1007,7 @@ export const InstalacionesPage: React.FC = () => {
                 disabled={saving}
                 className="rounded border border-primary-500 bg-white px-4 py-2 text-xs font-medium text-slate-800 shadow hover:bg-primary-50 disabled:opacity-60"
               >
-                {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
+                {saving ? "Guardando..." : editing ? "Actualizar" : "Crear"}
               </button>
             </div>
           </form>
