@@ -25,9 +25,9 @@ export const LoginPage: React.FC = () => {
     try {
       const baseApiUrl = import.meta.env.VITE_API_URL || "/api";
 
-      // El endpoint de login de Djoser está bajo /token/login/ en el backend
+      // El endpoint de login de Djoser está bajo /auth/login/ en el backend
 
-      const loginUrl = baseApiUrl.replace(/\/?api\/?$/, "") + "/token/login/";
+      const loginUrl = baseApiUrl.replace(/\/?api\/?$/, "") + "/auth/login/";
 
       const response = await axios.post(loginUrl, {
         username,
