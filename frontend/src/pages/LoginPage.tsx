@@ -23,8 +23,8 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const baseApiUrl = import.meta.env.VITE_API_URL || "/api";
-      const loginUrl = baseApiUrl.replace(/\/?api\/?$/, "") + "/auth/login/";
+      const apiUrl = import.meta.env.VITE_API_URL || "";
+      const loginUrl = apiUrl ? `${apiUrl}/auth/login/` : "/auth/login/";
 
       const response = await axios.post(loginUrl, {
         username,
