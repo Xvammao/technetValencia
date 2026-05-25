@@ -33,7 +33,8 @@ env_allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS')
 if env_allowed_hosts:
     ALLOWED_HOSTS = [h.strip() for h in env_allowed_hosts.split(',') if h.strip()]
 else:
-    ALLOWED_HOSTS = default_allowed_hosts
+    # En producción (Railway), permitir todos los hosts si no se especifica
+    ALLOWED_HOSTS = ['*'] if not DEBUG else default_allowed_hosts
 
 
 # Application definition
@@ -98,9 +99,12 @@ else:
     CORS_ALLOWED_ORIGINS = default_cors_origins
 
 # CSRF trusted origins (necesario en producción con HTTPS y proxy como Railway)
+default_csrf_trusted = ['http://localhost:5173', 'http://127.0.0.1:5173']
 env_csrf_trusted = os.environ.get('CSRF_TRUSTED_ORIGINS')
 if env_csrf_trusted:
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in env_csrf_trusted.split(',') if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = default_csrf_trusted
 
 ROOT_URLCONF = 'Backend.urls'
 
