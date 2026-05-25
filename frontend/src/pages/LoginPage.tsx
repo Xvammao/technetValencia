@@ -1,11 +1,11 @@
-import React, { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { FormEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,9 +15,9 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const baseApiUrl = import.meta.env.VITE_API_URL || '/api';
-      // El endpoint de login de Djoser está bajo /token/token/login/ en el backend
-      const loginUrl = baseApiUrl.replace(/\/?api\/?$/, '') + '/token/token/login/';
+      const baseApiUrl = import.meta.env.VITE_API_URL || "/api";
+      // El endpoint de login de Djoser está bajo /token/login/ en el backend
+      const loginUrl = baseApiUrl.replace(/\/?api\/?$/, "") + "/token/login/";
 
       const response = await axios.post(loginUrl, {
         username,
@@ -25,25 +25,29 @@ export const LoginPage: React.FC = () => {
       });
 
       const token = response.data.auth_token;
-      localStorage.setItem('auth_token', token);
+      localStorage.setItem("auth_token", token);
 
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
         const detail = (err.response?.data as any)?.detail;
 
         if (status === 400 || status === 401) {
-          setError(detail || 'Credenciales inválidas. Comprueba usuario y contraseña.');
+          setError(
+            detail || "Credenciales inválidas. Comprueba usuario y contraseña.",
+          );
         } else if (!err.response) {
-          setError('No se pudo conectar con el servidor. Revisa que el backend esté levantado en 127.0.0.1:8000.');
+          setError(
+            "No se pudo conectar con el servidor. Revisa que el backend esté levantado en 127.0.0.1:8000.",
+          );
         } else {
-          setError('Error al iniciar sesión. Código: ' + status);
+          setError("Error al iniciar sesión. Código: " + status);
         }
       } else {
-        setError('Error inesperado al iniciar sesión.');
+        setError("Error inesperado al iniciar sesión.");
       }
-      console.error('Login error', err);
+      console.error("Login error", err);
     } finally {
       setLoading(false);
     }
@@ -58,18 +62,25 @@ export const LoginPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-slate-900">Technet</h1>
-            <p className="text-[11px] uppercase tracking-wide text-slate-500">Panel de gestión de telecomunicaciones</p>
+            <p className="text-[11px] uppercase tracking-wide text-slate-500">
+              Panel de gestión de telecomunicaciones
+            </p>
           </div>
         </div>
 
-        <h2 className="mb-2 text-base font-semibold text-slate-900">Iniciar sesión</h2>
+        <h2 className="mb-2 text-base font-semibold text-slate-900">
+          Iniciar sesión
+        </h2>
         <p className="mb-4 text-xs text-slate-600">
           Introduce tus credenciales para acceder al panel de control.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-slate-700" htmlFor="username">
+            <label
+              className="block text-xs font-medium text-slate-700"
+              htmlFor="username"
+            >
               Usuario
             </label>
             <input
@@ -83,7 +94,10 @@ export const LoginPage: React.FC = () => {
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-slate-700" htmlFor="password">
+            <label
+              className="block text-xs font-medium text-slate-700"
+              htmlFor="password"
+            >
               Contraseña
             </label>
             <input
@@ -109,12 +123,13 @@ export const LoginPage: React.FC = () => {
               disabled={loading}
               className="inline-flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-primary-200/80 transition-colors hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? 'Entrando...' : 'Acceder al panel'}
+              {loading ? "Entrando..." : "Acceder al panel"}
             </button>
           </div>
 
           <p className="pt-1 text-center text-[11px] text-slate-500">
-            © {new Date().getFullYear()} Technet. Acceso restringido a personal autorizado.
+            © {new Date().getFullYear()} Technet. Acceso restringido a personal
+            autorizado.
           </p>
         </form>
       </div>
