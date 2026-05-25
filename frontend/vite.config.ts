@@ -1,28 +1,31 @@
 import { defineConfig } from "vite";
+
 import react from "@vitejs/plugin-react-swc";
 
 export default defineConfig({
   plugins: [react()],
+
   server: {
     port: 5173,
+
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8000",
+
         changeOrigin: true,
       },
+
       "/token": {
         target: "http://127.0.0.1:8000",
+
         changeOrigin: true,
       },
     },
   },
+
   preview: {
     // Permitir cualquier host en modo preview (útil para dominios dinámicos como Railway)
+
     allowedHosts: true,
-  },
-  // Configuración para producción
-  build: {
-    outDir: "dist",
-    sourcemap: false,
   },
 });

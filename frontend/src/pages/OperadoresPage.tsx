@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 import { api } from "../api/client";
 
 interface Operador {
@@ -34,32 +34,16 @@ export const OperadoresPage: React.FC = () => {
     }
   };
 
-  const handleExportExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Operadores");
+  const handleExportExcel = () => {
+    const rows = filteredOperadores.map((op) => ({
+      ID: op.id_operador,
+      Nombre: op.nombre_operador,
+    }));
 
-    worksheet.columns = [
-      { header: "ID", key: "id" },
-      { header: "Nombre", key: "nombre" },
-    ];
-
-    for (const op of filteredOperadores) {
-      worksheet.addRow({
-        id: op.id_operador,
-        nombre: op.nombre_operador,
-      });
-    }
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "operadores.xlsx";
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Operadores");
+    XLSX.writeFile(workbook, "operadores.xlsx");
   };
 
   const filteredOperadores = operadores.filter((op) => {

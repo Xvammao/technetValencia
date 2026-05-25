@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 import { api } from "../api/client";
 
 interface Tecnico {
@@ -55,34 +55,17 @@ export const TecnicosPage: React.FC = () => {
     startIndex + pageSize,
   );
 
-  const handleExportExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Tecnicos");
+  const handleExportExcel = () => {
+    const rows = filteredTecnicos.map((tec) => ({
+      ID: tec.id_tecnico,
+      Nombre: tec.nombre_tecnico,
+      "Código empresa": tec.id_tecnico_empresa,
+    }));
 
-    worksheet.columns = [
-      { header: "ID", key: "id" },
-      { header: "Nombre", key: "nombre" },
-      { header: "Código empresa", key: "codigo" },
-    ];
-
-    for (const tec of filteredTecnicos) {
-      worksheet.addRow({
-        id: tec.id_tecnico,
-        nombre: tec.nombre_tecnico,
-        codigo: tec.id_tecnico_empresa,
-      });
-    }
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "tecnicos.xlsx";
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Tecnicos");
+    XLSX.writeFile(workbook, "tecnicos.xlsx");
   };
 
   useEffect(() => {

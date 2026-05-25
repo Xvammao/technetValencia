@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 import { api } from "../api/client";
 
 interface Orden {
@@ -59,38 +59,19 @@ export const OrdenesPage: React.FC = () => {
     startIndex + pageSize,
   );
 
-  const handleExportExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Ordenes");
+  const handleExportExcel = () => {
+    const rows = filteredOrdenes.map((orden) => ({
+      ID: orden.id_orden,
+      "Tipo de orden": orden.tipo_orden,
+      Puntos: orden.puntos_orden,
+      "Valor técnico": orden.valor_orden_tecnico,
+      "Valor empresa": orden.valor_orden_empresa,
+    }));
 
-    worksheet.columns = [
-      { header: "ID", key: "id" },
-      { header: "Tipo de orden", key: "tipo" },
-      { header: "Puntos", key: "puntos" },
-      { header: "Valor técnico", key: "valorTec" },
-      { header: "Valor empresa", key: "valorEmp" },
-    ];
-
-    for (const orden of filteredOrdenes) {
-      worksheet.addRow({
-        id: orden.id_orden,
-        tipo: orden.tipo_orden,
-        puntos: orden.puntos_orden,
-        valorTec: orden.valor_orden_tecnico,
-        valorEmp: orden.valor_orden_empresa,
-      });
-    }
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "ordenes.xlsx";
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ordenes");
+    XLSX.writeFile(workbook, "ordenes.xlsx");
   };
 
   useEffect(() => {

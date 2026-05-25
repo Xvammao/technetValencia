@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
 import { api } from "../api/client";
 
 interface Equipo {
@@ -174,19 +174,8 @@ export const EquiposPage: React.FC = () => {
     startIndex + pageSize,
   );
 
-  const handleExportExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Equipos");
-
-    worksheet.columns = [
-      { header: "ID", key: "id" },
-      { header: "Nombre", key: "nombre" },
-      { header: "N.º serie", key: "serie" },
-      { header: "Tecnico", key: "tecnico" },
-      { header: "Operador", key: "operador" },
-    ];
-
-    for (const equipo of filteredEquipos) {
+  const handleExportExcel = () => {
+    const rows = filteredEquipos.map((equipo) => {
       let operadorNombre = "";
       if (typeof equipo.operador === "string" && equipo.operador.trim()) {
         const parsed = Number(equipo.operador);
@@ -228,25 +217,19 @@ export const EquiposPage: React.FC = () => {
         if (op) operadorNombre = op.nombre_operador;
       }
 
-      worksheet.addRow({
-        id: equipo.id_equipos,
-        nombre: equipo.nombre,
-        serie: equipo.numero_serie_equipo,
-        tecnico: equipo.tecnico,
-        operador: operadorNombre,
-      });
-    }
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      return {
+        ID: equipo.id_equipos,
+        Nombre: equipo.nombre,
+        "N.º serie": equipo.numero_serie_equipo,
+        Tecnico: equipo.tecnico,
+        Operador: operadorNombre,
+      };
     });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "equipos.xlsx";
-    a.click();
-    window.URL.revokeObjectURL(url);
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Equipos");
+    XLSX.writeFile(workbook, "equipos.xlsx");
   };
 
   const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,20 +249,11 @@ export const EquiposPage: React.FC = () => {
 
     try {
       const data = await file.arrayBuffer();
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(data);
-      const worksheet = workbook.worksheets[0];
-      const rows: Record<string, any>[] = [];
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) return; // Skip header
-        const rowData: Record<string, any> = {};
-        row.eachCell((cell, colNumber) => {
-          const header =
-            worksheet.getRow(1).getCell(colNumber).value?.toString() ||
-            `col${colNumber}`;
-          rowData[header] = cell.value;
-        });
-        rows.push(rowData);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, {
+        defval: "",
       });
 
       let createdCount = 0;

@@ -1,36 +1,50 @@
 import React, { FormEvent, useState } from "react";
+
 import { useNavigate } from "react-router-dom";
+
 import axios from "axios";
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
+
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
     setError(null);
+
     setLoading(true);
 
     try {
       const baseApiUrl = import.meta.env.VITE_API_URL || "/api";
-      // El endpoint de login de Djoser está bajo /token/login/ en el backend
-      const loginUrl = baseApiUrl.replace(/\/?api\/?$/, "") + "/token/login/";
+
+      // El endpoint de login de Djoser está bajo /token/token/login/ en el backend
+
+      const loginUrl =
+        baseApiUrl.replace(/\/?api\/?$/, "") + "/token/token/login/";
 
       const response = await axios.post(loginUrl, {
         username,
+
         password,
       });
 
       const token = response.data.auth_token;
+
       localStorage.setItem("auth_token", token);
 
       navigate("/dashboard");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
+
         const detail = (err.response?.data as any)?.detail;
 
         if (status === 400 || status === 401) {
@@ -47,6 +61,7 @@ export const LoginPage: React.FC = () => {
       } else {
         setError("Error inesperado al iniciar sesión.");
       }
+
       console.error("Login error", err);
     } finally {
       setLoading(false);
@@ -60,8 +75,10 @@ export const LoginPage: React.FC = () => {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500 text-lg font-bold text-white shadow-lg shadow-primary-200/80">
             TN
           </div>
+
           <div>
             <h1 className="text-lg font-semibold text-slate-900">Technet</h1>
+
             <p className="text-[11px] uppercase tracking-wide text-slate-500">
               Panel de gestión de telecomunicaciones
             </p>
@@ -71,6 +88,7 @@ export const LoginPage: React.FC = () => {
         <h2 className="mb-2 text-base font-semibold text-slate-900">
           Iniciar sesión
         </h2>
+
         <p className="mb-4 text-xs text-slate-600">
           Introduce tus credenciales para acceder al panel de control.
         </p>
@@ -83,6 +101,7 @@ export const LoginPage: React.FC = () => {
             >
               Usuario
             </label>
+
             <input
               id="username"
               type="text"
@@ -93,6 +112,7 @@ export const LoginPage: React.FC = () => {
               required
             />
           </div>
+
           <div className="space-y-1">
             <label
               className="block text-xs font-medium text-slate-700"
@@ -100,6 +120,7 @@ export const LoginPage: React.FC = () => {
             >
               Contraseña
             </label>
+
             <input
               id="password"
               type="password"
