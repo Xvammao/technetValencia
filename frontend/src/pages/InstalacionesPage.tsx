@@ -83,6 +83,10 @@ export const InstalacionesPage: React.FC = () => {
 
   const [search, setSearch] = useState("");
 
+  const [fechaInicio, setFechaInicio] = useState("");
+
+  const [fechaFin, setFechaFin] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const pageSize = 20;
@@ -614,16 +618,34 @@ export const InstalacionesPage: React.FC = () => {
     : null;
 
   const filteredInstalaciones = instalaciones.filter((inst) => {
-    if (!search.trim()) return true;
+    // Filtro de texto
+    if (search.trim()) {
+      const term = search.toLowerCase();
+      const matchesSearch =
+        inst.numero_serie_equipo.toLowerCase().includes(term) ||
+        inst.numero_de_orden.toLowerCase().includes(term) ||
+        inst.nombre_tecnico.toLowerCase().includes(term) ||
+        (inst.tipo_orden ?? "").toLowerCase().includes(term);
+      if (!matchesSearch) return false;
+    }
 
-    const term = search.toLowerCase();
+    // Filtro de fecha inicio
+    if (fechaInicio) {
+      if (!inst.fecha_cierre) return false;
+      const fechaCierreDate = new Date(inst.fecha_cierre);
+      const inicioDate = new Date(fechaInicio);
+      if (fechaCierreDate < inicioDate) return false;
+    }
 
-    return (
-      inst.numero_serie_equipo.toLowerCase().includes(term) ||
-      inst.numero_de_orden.toLowerCase().includes(term) ||
-      inst.nombre_tecnico.toLowerCase().includes(term) ||
-      (inst.tipo_orden ?? "").toLowerCase().includes(term)
-    );
+    // Filtro de fecha fin
+    if (fechaFin) {
+      if (!inst.fecha_cierre) return false;
+      const fechaCierreDate = new Date(inst.fecha_cierre);
+      const finDate = new Date(fechaFin);
+      if (fechaCierreDate > finDate) return false;
+    }
+
+    return true;
   });
 
   const totalGroups = Object.keys(
@@ -683,9 +705,37 @@ export const InstalacionesPage: React.FC = () => {
               type="text"
               placeholder="Buscar por N.º serie, N.º orden, técnico o tipo orden..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="w-full max-w-xs rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
+
+            {/* Filtro de fechas */}
+            <div className="flex items-center gap-1">
+              <label className="text-xs text-slate-500 whitespace-nowrap">Desde</label>
+              <input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => { setFechaInicio(e.target.value); setCurrentPage(1); }}
+                className="rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <label className="text-xs text-slate-500 whitespace-nowrap">Hasta</label>
+              <input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => { setFechaFin(e.target.value); setCurrentPage(1); }}
+                className="rounded border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              {(fechaInicio || fechaFin) && (
+                <button
+                  type="button"
+                  onClick={() => { setFechaInicio(""); setFechaFin(""); setCurrentPage(1); }}
+                  className="rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-50"
+                  title="Limpiar fechas"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <button
