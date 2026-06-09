@@ -14,6 +14,7 @@ interface EquipoResumen {
 }
 
 interface InstalacionResumen {
+  numero_serie_equipo: string;
   nombre_tecnico: string;
   tipo_orden: string | null;
   fecha_cierre: string | null;
@@ -125,11 +126,18 @@ export const Dashboard: React.FC = () => {
         const equiposData = (equiposRes.data?.results ?? equiposRes.data) as EquipoResumen[];
 
         // Equipos en stock: los que NO tienen su serie en ninguna instalación
+        // Normalizar quitando sufijos _DUPLI que se generan en la importación
         const seriesInstSet = new Set(
-          instalacionesData.map((i: any) => (i.numero_serie_equipo ?? '').toLowerCase().trim())
+          instalacionesData.map((i) => {
+            const raw = (i.numero_serie_equipo ?? '').trim();
+            // Quitar sufijo _DUPLI<n> si existe
+            return raw.replace(/_DUPLI\d+$/i, '').toLowerCase();
+          })
         );
         const enStock = equiposData.filter(
-          (eq) => !eq.numero_serie_equipo || !seriesInstSet.has(eq.numero_serie_equipo.toLowerCase().trim())
+          (eq) =>
+            !eq.numero_serie_equipo ||
+            !seriesInstSet.has(eq.numero_serie_equipo.toLowerCase().trim())
         ).length;
 
         setMetrics({

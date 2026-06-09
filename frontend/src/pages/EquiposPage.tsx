@@ -97,8 +97,11 @@ export const EquiposPage: React.FC = () => {
   };
 
   // Equipos en stock: los que NO tienen su serie en ninguna instalación
+  // Normalizar quitando sufijos _DUPLI<n> que se generan al importar
   const seriesInstalacionesSet = new Set(
-    seriesInstalaciones.map((s) => s.toLowerCase().trim()),
+    seriesInstalaciones.map((s) =>
+      s.toLowerCase().trim().replace(/_dupli\d+$/i, '')
+    ),
   );
 
   const stockEquipos = equipos.filter(
