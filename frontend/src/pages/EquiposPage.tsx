@@ -96,19 +96,19 @@ export const EquiposPage: React.FC = () => {
     }
   };
 
-  const filteredEquipos = equipos.filter((equipo) => {
-    const seriesSet = new Set(
-      seriesInstalaciones.map((s) => s.toLowerCase().trim()),
-    );
+  // Equipos en stock: los que NO tienen su serie en ninguna instalación
+  const seriesInstalacionesSet = new Set(
+    seriesInstalaciones.map((s) => s.toLowerCase().trim()),
+  );
 
-    // Si el N.º de serie del equipo ya existe en instalaciones, no mostrarlo
-    if (
-      equipo.numero_serie_equipo &&
-      seriesSet.has(equipo.numero_serie_equipo.toLowerCase().trim())
-    ) {
-      return false;
-    }
+  const stockEquipos = equipos.filter(
+    (equipo) =>
+      !equipo.numero_serie_equipo ||
+      !seriesInstalacionesSet.has(equipo.numero_serie_equipo.toLowerCase().trim()),
+  );
 
+  // stockEquipos + filtro de búsqueda de texto para la tabla
+  const filteredEquipos = stockEquipos.filter((equipo) => {
     if (!search.trim()) return true;
     const term = search.toLowerCase();
 
@@ -175,7 +175,8 @@ export const EquiposPage: React.FC = () => {
   );
 
   const handleExportExcel = () => {
-    const rows = filteredEquipos.map((equipo) => {
+    // Exportar solo equipos en stock (sin filtro de texto)
+    const rows = stockEquipos.map((equipo) => {
       let operadorNombre = "";
       if (typeof equipo.operador === "string" && equipo.operador.trim()) {
         const parsed = Number(equipo.operador);

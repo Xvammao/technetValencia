@@ -9,6 +9,10 @@ interface Metrics {
   tecnicos: number;
 }
 
+interface EquipoResumen {
+  numero_serie_equipo: string;
+}
+
 interface InstalacionResumen {
   nombre_tecnico: string;
   tipo_orden: string | null;
@@ -116,16 +120,25 @@ export const Dashboard: React.FC = () => {
           return Array.isArray(data) ? data.length : 0;
         };
 
+        const instalacionesData = (instRes.data?.results ?? instRes.data) as InstalacionResumen[];
+        const ordenesData = (ordRes.data?.results ?? ordRes.data) as OrdenResumen[];
+        const equiposData = (equiposRes.data?.results ?? equiposRes.data) as EquipoResumen[];
+
+        // Equipos en stock: los que NO tienen su serie en ninguna instalación
+        const seriesInstSet = new Set(
+          instalacionesData.map((i: any) => (i.numero_serie_equipo ?? '').toLowerCase().trim())
+        );
+        const enStock = equiposData.filter(
+          (eq) => !eq.numero_serie_equipo || !seriesInstSet.has(eq.numero_serie_equipo.toLowerCase().trim())
+        ).length;
+
         setMetrics({
-          equipos: getCount(equiposRes),
+          equipos: enStock,
           instalaciones: getCount(instRes),
           operadores: getCount(opRes),
           ordenes: getCount(ordRes),
           tecnicos: getCount(tecRes),
         });
-
-        const instalacionesData = (instRes.data?.results ?? instRes.data) as InstalacionResumen[];
-        const ordenesData = (ordRes.data?.results ?? ordRes.data) as OrdenResumen[];
 
         setAllInstalaciones(instalacionesData);
         setAllOrdenes(ordenesData);
@@ -183,7 +196,7 @@ export const Dashboard: React.FC = () => {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <MetricCard
-          title="Equipos"
+          title="Equipos en stock"
           value={metrics?.equipos}
           loading={loading}
           accent="from-sky-500/20 to-sky-500/5"
@@ -248,7 +261,7 @@ export const Dashboard: React.FC = () => {
         <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-2 text-sm font-semibold text-slate-800">Resumen rápido</h2>
           <p className="text-xs text-slate-600">
-            Actualmente se gestionan <span className="font-semibold text-slate-900">{metrics.equipos}</span> equipos,
+            Actualmente se gestionan <span className="font-semibold text-slate-900">{metrics.equipos}</span> equipos en stock,
             distribuidos en <span className="font-semibold text-slate-900">{metrics.instalaciones}</span> instalaciones
             totales, atendidos por <span className="font-semibold text-slate-900">{metrics.tecnicos}</span> técnicos y
             coordinados con <span className="font-semibold text-slate-900">{metrics.operadores}</span> operadores.
