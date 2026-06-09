@@ -1,9 +1,9 @@
- Django==5.2.8
- djangorestframework
- djoser
- django-filter
- django-cors-headers
- whitenoise
- psycopg2-binary
- gunicorn
- dj-database-url
+Django==4.2.17
+djangorestframework==3.15.2
+djoser==2.3.1
+django-filter==24.3
+django-cors-headers==4.6.0
+whitenoise==6.8.2
+psycopg2-binary==2.9.10
+gunicorn==23.0.0
+dj-database-url==2.3.0

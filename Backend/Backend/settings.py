@@ -88,12 +88,18 @@ if env_cors_origins:
 else:
     CORS_ALLOWED_ORIGINS = default_cors_origins
 
+# En Railway, si no se configuran orígenes específicos, permitir todos los subdominios de railway.app
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://.*\.up\.railway\.app$',
+    r'^https://.*\.railway\.app$',
+]
+
 default_csrf_trusted = ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://technetvalencia.up.railway.app']
 env_csrf_trusted = os.environ.get('CSRF_TRUSTED_ORIGINS')
 if env_csrf_trusted:
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in env_csrf_trusted.split(',') if o.strip()]
 else:
-    CSRF_TRUSTED_ORIGINS = default_csrf_trusted
+    CSRF_TRUSTED_ORIGINS = default_csrf_trusted + ['https://*.up.railway.app', 'https://*.railway.app']
 
 ROOT_URLCONF = 'Backend.urls'
 
