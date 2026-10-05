@@ -77,6 +77,9 @@ export const InstalacionesMasOrangePage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {},
+  );
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<InstalacionMasOrange | null>(null);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
@@ -146,6 +149,29 @@ export const InstalacionesMasOrangePage: React.FC = () => {
       item.tecnico_asignado.toLowerCase().includes(term)
     );
   });
+
+  const instalacionesPorOt = filteredInstalaciones.reduce<
+    Record<string, InstalacionMasOrange[]>
+  >((groups, item) => {
+    (groups[item.ot] ??= []).push(item);
+    return groups;
+  }, {});
+
+  const parseAmount = (value: string | null) => {
+    if (!value) return 0;
+    const normalized = value
+      .replace(/[^0-9,.-]/g, "")
+      .replace(/\.(?=\d{3}(?:\D|$))/g, "")
+      .replace(",", ".");
+    const amount = Number.parseFloat(normalized);
+    return Number.isNaN(amount) ? 0 : amount;
+  };
+
+  const formatAmount = (amount: number) =>
+    `$${amount.toLocaleString("es-ES", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   const handleExport = () => {
     const worksheet = XLSX.utils.json_to_sheet(
@@ -427,32 +453,116 @@ export const InstalacionesMasOrangePage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredInstalaciones.map((item) => (
-                <tr key={item.id} className="border-t border-slate-100">
-                  <td className="px-4 py-2">{item.ot}</td>
-                  <td className="px-4 py-2">{item.operador}</td>
-                  <td className="px-4 py-2">{item.tipo}</td>
-                  <td className="px-4 py-2">{item.fecha_cierre ?? ""}</td>
-                  <td className="px-4 py-2">{item.tecnico_asignado}</td>
-                  <td className="px-4 py-2">{item.equipo_serial || "—"}</td>
-                  <td className="space-x-3 px-4 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(item)}
-                      className="text-primary-700 hover:underline"
+              {Object.entries(instalacionesPorOt).map(([ot, items]) => {
+                const expanded = expandedGroups[ot] ?? false;
+                const totals = items.reduce(
+                  (sum, item) => {
+                    const acometida = acometidas.find(
+                      (candidate) => candidate.id === item.acometida_id,
+                    );
+                    if (acometida) {
+                      sum.tecnico += parseAmount(acometida.valor_tecnico);
+                      sum.empresa += parseAmount(acometida.valor_empresa);
+                    }
+                    return sum;
+                  },
+                  { tecnico: 0, empresa: 0 },
+                );
+
+                return (
+                  <React.Fragment key={ot}>
+                    <tr
+                      className="cursor-pointer border-t border-slate-200 bg-slate-50 hover:bg-slate-100"
+                      onClick={() =>
+                        setExpandedGroups((previous) => ({
+                          ...previous,
+                          [ot]: !expanded,
+                        }))
+                      }
                     >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(item)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      <td
+                        colSpan={7}
+                        className="px-4 py-2 text-xs font-semibold text-primary-700"
+                      >
+                        <span className="mr-2 text-slate-600">
+                          {expanded ? "▾" : "▸"}
+                        </span>
+                        OT: {ot} ({items.length} instalación
+                        {items.length === 1 ? "" : "es"})
+                        <span className="ml-4 text-emerald-700">
+                          Total acometida técnico: {formatAmount(totals.tecnico)}{" "}
+                          | Total empresa: {formatAmount(totals.empresa)}
+                        </span>
+                      </td>
+                    </tr>
+                    {expanded &&
+                      items.map((item) => {
+                        const acometida = acometidas.find(
+                          (candidate) => candidate.id === item.acometida_id,
+                        );
+                        return (
+                          <React.Fragment key={item.id}>
+                            <tr className="border-t border-slate-100">
+                              <td className="px-4 py-2">{item.ot}</td>
+                              <td className="px-4 py-2">{item.operador}</td>
+                              <td className="px-4 py-2">{item.tipo}</td>
+                              <td className="px-4 py-2">
+                                {item.fecha_cierre ?? ""}
+                              </td>
+                              <td className="px-4 py-2">
+                                {item.tecnico_asignado}
+                              </td>
+                              <td className="px-4 py-2">
+                                {item.equipo_serial || "—"}
+                              </td>
+                              <td className="space-x-3 px-4 py-2 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => openEdit(item)}
+                                  className="text-primary-700 hover:underline"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(item)}
+                                  className="text-red-600 hover:underline"
+                                >
+                                  Eliminar
+                                </button>
+                              </td>
+                            </tr>
+                            <tr className="border-t border-slate-100 bg-white">
+                              <td
+                                colSpan={7}
+                                className="px-6 py-2 text-xs text-slate-700"
+                              >
+                                <div className="grid gap-2 md:grid-cols-2">
+                                  <div>
+                                    <span className="block font-medium">
+                                      Valor de la acometida para el técnico
+                                    </span>
+                                    <span>
+                                      {acometida?.valor_tecnico ?? "Sin acometida"}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="block font-medium">
+                                      Valor de la acometida para la empresa
+                                    </span>
+                                    <span>
+                                      {acometida?.valor_empresa ?? "Sin acometida"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          </React.Fragment>
+                        );
+                      })}
+                  </React.Fragment>
+                );
+              })}
               {filteredInstalaciones.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
@@ -465,17 +575,33 @@ export const InstalacionesMasOrangePage: React.FC = () => {
         )}
       </div>
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6">
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="masorange-form-title"
-            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-5 shadow-xl"
+            className="flex max-h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl"
           >
-            <div className="mb-4 flex items-center justify-between">
-              <h2 id="masorange-form-title" className="text-lg font-semibold">
-                {editing ? `Editar OT ${editing.ot}` : "Nueva instalación MasOrange"}
-              </h2>
+            <div className="flex shrink-0 items-start justify-between border-b border-slate-200 bg-gradient-to-r from-orange-50 via-white to-white px-5 py-4 sm:px-7">
+              <div className="flex items-start gap-3">
+                <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-lg font-bold text-orange-700">
+                  {editing ? "✎" : "+"}
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-700">
+                    Instalaciones MasOrange
+                  </p>
+                  <h2
+                    id="masorange-form-title"
+                    className="mt-1 text-xl font-semibold text-slate-900"
+                  >
+                    {editing ? `Editar OT ${editing.ot}` : "Nueva instalación"}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Datos de la orden, equipos asignados y valores de acometida.
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
                 aria-label="Cerrar formulario"
@@ -484,117 +610,147 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                   setEditing(null);
                   setError(null);
                 }}
-                className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100"
+                className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 ✕
               </button>
             </div>
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-2">
-                {(
-                  [
-                    ["ot", "OT"],
-                    ["operador", "Operador"],
-                    ["tipo", "Tipo"],
-                    ["tecnico_asignado", "Técnico asignado"],
-                  ] as const
-                ).map(([field, label]) => (
-                  <div key={field}>
-                    <label
-                      htmlFor={`masorange-${field}`}
-                      className="mb-1 block text-xs font-medium text-slate-700"
-                    >
-                      {label}
-                    </label>
-                    <input
-                      id={`masorange-${field}`}
-                      required
-                      value={form[field]}
-                      onChange={(event) =>
-                        setForm({ ...form, [field]: event.target.value })
-                      }
-                      className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
-                    />
+            <form
+              onSubmit={handleSave}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <div className="space-y-5 overflow-y-auto px-5 py-5 sm:px-7">
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                  <div className="mb-4 flex items-center gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold text-slate-700">
+                      1
+                    </span>
+                    <div>
+                      <h3 className="font-semibold text-slate-900">
+                        Información de la instalación
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Identificación, técnico responsable y equipo principal.
+                      </p>
+                    </div>
                   </div>
-                ))}
-                <div>
-                  <label
-                    htmlFor="masorange-fecha"
-                    className="mb-1 block text-xs font-medium text-slate-700"
-                  >
-                    Fecha de cierre
-                  </label>
-                  <input
-                    id="masorange-fecha"
-                    type="date"
-                    value={form.fecha_cierre}
-                    onChange={(event) =>
-                      setForm({ ...form, fecha_cierre: event.target.value })
-                    }
-                    className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="masorange-equipo"
-                    className="mb-1 block text-xs font-medium text-slate-700"
-                  >
-                    Equipo (serial de equipos)
-                  </label>
-                  <input
-                    id="masorange-equipo"
-                    required
-                    list="masorange-equipment-serials"
-                    value={form.equipo_serial}
-                    onChange={(event) =>
-                      setForm({ ...form, equipo_serial: event.target.value })
-                    }
-                    className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
-                  />
-                  <datalist id="masorange-equipment-serials">
-                    {equipos.map((equipo) => (
-                      <option
-                        key={equipo.id_equipos}
-                        value={equipo.numero_serie_equipo}
-                      >
-                        {equipo.nombre}
-                      </option>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {(
+                      [
+                        ["ot", "OT"],
+                        ["operador", "Operador"],
+                        ["tipo", "Tipo"],
+                        ["tecnico_asignado", "Técnico asignado"],
+                      ] as const
+                    ).map(([field, label]) => (
+                      <div key={field}>
+                        <label
+                          htmlFor={`masorange-${field}`}
+                          className="mb-1.5 block text-sm font-medium text-slate-700"
+                        >
+                          {label}
+                        </label>
+                        <input
+                          id={`masorange-${field}`}
+                          required
+                          value={form[field]}
+                          onChange={(event) =>
+                            setForm({ ...form, [field]: event.target.value })
+                          }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                        />
+                      </div>
                     ))}
-                  </datalist>
-                  {form.equipo_serial.trim() && catalogosCargados && (
-                    <p
-                      role="status"
-                      className={`mt-1 text-xs ${
-                        equipos.some(
-                          (equipo) =>
-                            equipo.numero_serie_equipo.toLowerCase() ===
-                            form.equipo_serial.trim().toLowerCase(),
-                        )
-                          ? "text-emerald-700"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {equipos.some(
-                        (equipo) =>
-                          equipo.numero_serie_equipo.toLowerCase() ===
-                          form.equipo_serial.trim().toLowerCase(),
-                      )
-                        ? "Equipo encontrado en el inventario."
-                        : "Este serial no existe en equipos."}
-                    </p>
-                  )}
-                </div>
-              </div>
+                    <div>
+                      <label
+                        htmlFor="masorange-fecha"
+                        className="mb-1.5 block text-sm font-medium text-slate-700"
+                      >
+                        Fecha de cierre
+                      </label>
+                      <input
+                        id="masorange-fecha"
+                        type="date"
+                        value={form.fecha_cierre}
+                        onChange={(event) =>
+                          setForm({ ...form, fecha_cierre: event.target.value })
+                        }
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm shadow-sm transition focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="masorange-equipo"
+                        className="mb-1.5 block text-sm font-medium text-slate-700"
+                      >
+                        Equipo principal
+                      </label>
+                      <input
+                        id="masorange-equipo"
+                        required
+                        list="masorange-equipment-serials"
+                        value={form.equipo_serial}
+                        placeholder="Selecciona o escribe el serial"
+                        onChange={(event) =>
+                          setForm({ ...form, equipo_serial: event.target.value })
+                        }
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                      />
+                      <datalist id="masorange-equipment-serials">
+                        {equipos.map((equipo) => (
+                          <option
+                            key={equipo.id_equipos}
+                            value={equipo.numero_serie_equipo}
+                          >
+                            {equipo.nombre}
+                          </option>
+                        ))}
+                      </datalist>
+                      {form.equipo_serial.trim() && catalogosCargados && (
+                        <p
+                          role="status"
+                          className={`mt-1 text-xs ${
+                            equipos.some(
+                              (equipo) =>
+                                equipo.numero_serie_equipo.toLowerCase() ===
+                                form.equipo_serial.trim().toLowerCase(),
+                            )
+                              ? "text-emerald-700"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {equipos.some(
+                            (equipo) =>
+                              equipo.numero_serie_equipo.toLowerCase() ===
+                              form.equipo_serial.trim().toLowerCase(),
+                          )
+                            ? "Equipo encontrado en el inventario."
+                            : "Este serial no existe en equipos."}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </section>
 
-              <section className="space-y-4 rounded border border-slate-200 bg-slate-50 p-4">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Equipo adicional
-                </h3>
+              <section className="space-y-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm sm:p-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-sm font-semibold text-orange-700">
+                    2
+                  </span>
+                  <div>
+                    <h3 className="font-semibold text-slate-900">
+                      Equipamiento y acometida
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Configura DESCO, tarjetas SIM y el servicio realizado.
+                    </p>
+                  </div>
+                </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label
                       htmlFor="masorange-desco"
-                      className="mb-1 block text-xs font-medium text-slate-700"
+                      className="mb-1.5 block text-sm font-medium text-slate-700"
                     >
                       ¿Incluye DESCO?
                     </label>
@@ -609,7 +765,7 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                           desco_serial: answer ? form.desco_serial : "",
                         });
                       }}
-                      className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm shadow-sm transition focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
                     >
                       <option value="no">No</option>
                       <option value="si">Sí</option>
@@ -619,7 +775,7 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="masorange-desco-serial"
-                        className="mb-1 block text-xs font-medium text-slate-700"
+                        className="mb-1.5 block text-sm font-medium text-slate-700"
                       >
                         Serial del DESCO
                       </label>
@@ -628,10 +784,11 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                         required
                         list="masorange-equipment-serials"
                         value={form.desco_serial}
+                        placeholder="Serial registrado en equipos"
                         onChange={(event) =>
                           setForm({ ...form, desco_serial: event.target.value })
                         }
-                        className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
                       />
                       {form.desco_serial.trim() && catalogosCargados && (
                         <p
@@ -642,8 +799,8 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                                 equipo.numero_serie_equipo.toLowerCase() ===
                                 form.desco_serial.trim().toLowerCase(),
                             )
-                              ? "text-emerald-700"
-                              : "text-red-600"
+                              ? "inline-flex rounded-lg bg-emerald-50 px-2 py-1 text-emerald-700"
+                              : "inline-flex rounded-lg bg-red-50 px-2 py-1 text-red-600"
                           }`}
                         >
                           {equipos.some(
@@ -663,7 +820,7 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                   <div>
                     <label
                       htmlFor="masorange-sim"
-                      className="mb-1 block text-xs font-medium text-slate-700"
+                      className="mb-1.5 block text-sm font-medium text-slate-700"
                     >
                       ¿Incluye tarjetas SIM?
                     </label>
@@ -680,7 +837,7 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                             : [],
                         });
                       }}
-                      className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm shadow-sm transition focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
                     >
                       <option value="no">No</option>
                       <option value="si">Sí</option>
@@ -690,7 +847,7 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                     <div>
                       <label
                         htmlFor="masorange-sim-count"
-                        className="mb-1 block text-xs font-medium text-slate-700"
+                        className="mb-1.5 block text-sm font-medium text-slate-700"
                       >
                         Cantidad de tarjetas SIM
                       </label>
@@ -714,46 +871,55 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                             ),
                           });
                         }}
-                        className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm shadow-sm transition focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
                       />
                     </div>
                   )}
                 </div>
                 {form.tarjetas_sim &&
-                  form.seriales_tarjetas_sim.map((serial, index) => (
-                    <div key={index}>
-                      <label
-                        htmlFor={`masorange-sim-serial-${index}`}
-                        className="mb-1 block text-xs font-medium text-slate-700"
+                  (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                    {form.seriales_tarjetas_sim.map((serial, index) => (
+                      <div
+                        key={index}
+                        className="rounded-xl border border-slate-200 bg-white p-3"
                       >
-                        Serial SIM {index + 1}
-                      </label>
-                      <input
-                        id={`masorange-sim-serial-${index}`}
-                        required
-                        value={serial}
-                        onChange={(event) =>
-                          setForm({
-                            ...form,
-                            seriales_tarjetas_sim:
-                              form.seriales_tarjetas_sim.map((value, itemIndex) =>
-                                itemIndex === index
-                                  ? event.target.value
-                                  : value,
-                              ),
-                          })
-                        }
-                        className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
-                      />
+                        <label
+                          htmlFor={`masorange-sim-serial-${index}`}
+                          className="mb-1.5 block text-sm font-medium text-slate-700"
+                        >
+                          Serial SIM {index + 1}
+                        </label>
+                        <input
+                          id={`masorange-sim-serial-${index}`}
+                          required
+                          value={serial}
+                          placeholder={`Introduce el serial SIM ${index + 1}`}
+                          onChange={(event) =>
+                            setForm({
+                              ...form,
+                              seriales_tarjetas_sim:
+                                form.seriales_tarjetas_sim.map(
+                                  (value, itemIndex) =>
+                                    itemIndex === index
+                                      ? event.target.value
+                                      : value,
+                                ),
+                            })
+                          }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                        />
+                      </div>
+                    ))}
                     </div>
-                  ))}
+                  )}
 
                 <div>
                   <label
                     htmlFor="masorange-acometida"
-                    className="mb-1 block text-xs font-medium text-slate-700"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
                   >
-                    Acometida y precios
+                    Acometida
                   </label>
                   <select
                     id="masorange-acometida"
@@ -761,7 +927,7 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                     onChange={(event) =>
                       setForm({ ...form, acometida_id: event.target.value })
                     }
-                    className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm shadow-sm transition focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
                   >
                     <option value="">Sin acometida</option>
                     {acometidas.map((item) => (
@@ -771,15 +937,45 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                  {form.acometida_id && (
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {acometidas
+                        .filter((item) => String(item.id) === form.acometida_id)
+                        .map((item) => (
+                          <React.Fragment key={item.id}>
+                            <div className="rounded-xl border border-orange-100 bg-white p-3">
+                              <p className="text-xs font-medium text-slate-500">
+                                Valor para el técnico
+                              </p>
+                              <p className="mt-1 text-base font-semibold text-slate-900">
+                                {item.valor_tecnico ?? "Sin precio"}
+                              </p>
+                            </div>
+                            <div className="rounded-xl border border-orange-100 bg-white p-3">
+                              <p className="text-xs font-medium text-slate-500">
+                                Valor para la empresa
+                              </p>
+                              <p className="mt-1 text-base font-semibold text-slate-900">
+                                {item.valor_empresa ?? "Sin precio"}
+                              </p>
+                            </div>
+                          </React.Fragment>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </section>
+              </div>
 
               {error && (
-                <p className="rounded bg-red-50 p-3 text-sm text-red-700">
+                <p
+                  role="alert"
+                  className="mx-5 mt-0 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 sm:mx-7"
+                >
                   {error}
                 </p>
               )}
-              <div className="flex justify-end gap-2">
+              <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7">
                 <button
                   type="button"
                   onClick={() => {
@@ -787,16 +983,20 @@ export const InstalacionesMasOrangePage: React.FC = () => {
                     setEditing(null);
                     setError(null);
                   }}
-                  className="rounded border border-slate-300 px-4 py-2 text-sm"
+                  className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={saving || !catalogosCargados}
-                  className="rounded bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-400 disabled:opacity-50"
+                  className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {saving ? "Guardando..." : editing ? "Guardar cambios" : "Crear"}
+                  {saving
+                    ? "Guardando..."
+                    : editing
+                      ? "Guardar cambios"
+                      : "Crear instalación"}
                 </button>
               </div>
             </form>
