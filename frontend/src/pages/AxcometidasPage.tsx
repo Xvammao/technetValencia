@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 
 interface Acometida {
@@ -13,8 +13,10 @@ export const AxcometidasPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Acometida | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState({
     acometida: "",
     valor_tecnico: "",
@@ -50,17 +52,21 @@ export const AxcometidasPage: React.FC = () => {
     setEditing(null);
     setForm({ acometida: "", valor_tecnico: "", valor_empresa: "" });
     setError(null);
+    setSuccess(null);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
     setError(null);
+    setSuccess(null);
     try {
       if (editing) {
         await api.put(`/acometidas/${editing.id}/`, form);
+        setSuccess(`Se actualizaron los datos de "${form.acometida}".`);
       } else {
         await api.post("/acometidas/", form);
+        setSuccess(`Se añadió "${form.acometida}".`);
       }
       setEditing(null);
       setForm({ acometida: "", valor_tecnico: "", valor_empresa: "" });
@@ -77,6 +83,7 @@ export const AxcometidasPage: React.FC = () => {
     if (!window.confirm(`¿Eliminar la acometida "${item.acometida}"?`)) return;
     try {
       await api.delete(`/acometidas/${item.id}/`);
+      setSuccess(`Se eliminó "${item.acometida}".`);
       await loadItems();
     } catch (err) {
       console.error("Error eliminando acometida", err);
@@ -88,10 +95,15 @@ export const AxcometidasPage: React.FC = () => {
     <div className="animate-fade-in space-y-4 p-4">
       <h1 className="text-2xl font-semibold">Axcometidas</h1>
       {error && <p className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {success && <p role="status" className="rounded bg-green-50 p-3 text-sm text-green-700">{success}</p>}
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
         className="grid gap-3 rounded border border-slate-200 bg-white p-4 shadow md:grid-cols-4"
       >
+        <h2 className="text-sm font-semibold text-slate-800 md:col-span-4">
+          {editing ? `Editando acometida #${editing.id}` : "Nueva acometida"}
+        </h2>
         <input
           required
           aria-label="Acometida"
@@ -168,12 +180,17 @@ export const AxcometidasPage: React.FC = () => {
                       className="text-primary-700 hover:underline"
                       onClick={() => {
                         setEditing(item);
+                        setSuccess(null);
                         setForm({
                           acometida: item.acometida,
                           valor_tecnico: item.valor_tecnico ?? "",
                           valor_empresa: item.valor_empresa ?? "",
                         });
                         setError(null);
+                        formRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        });
                       }}
                     >
                       Editar
