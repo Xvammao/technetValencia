@@ -25,7 +25,9 @@ interface Operador {
 export const EquiposPage: React.FC = () => {
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSeries, setLoadingSeries] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [seriesError, setSeriesError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [editing, setEditing] = useState<Equipo | null>(null);
@@ -80,35 +82,55 @@ export const EquiposPage: React.FC = () => {
   };
 
   const loadSeriesInstalaciones = async () => {
+    setLoadingSeries(true);
+    setSeriesError(null);
     try {
-      const response = await api.get("/instalaciones/");
-      const data = (response.data?.results ?? response.data) as Array<{
+      const [instalacionesResponse, masOrangeResponse] = await Promise.all([
+        api.get("/instalaciones/"),
+        api.get("/instalaciones-masorange/"),
+      ]);
+      const instalaciones = (instalacionesResponse.data?.results ??
+        instalacionesResponse.data) as Array<{
         numero_serie_equipo: string;
       }>;
-      const series = data
-        .map((inst) => inst.numero_serie_equipo?.trim())
-        .filter((s): s is string => !!s);
+      const instalacionesMasOrange = (masOrangeResponse.data?.results ??
+        masOrangeResponse.data) as Array<{
+        equipo_serial?: string;
+        desco_serial?: string;
+      }>;
+      const series = [
+        ...instalaciones.map((inst) => inst.numero_serie_equipo),
+        ...instalacionesMasOrange.flatMap((instalacion) => [
+          instalacion.equipo_serial,
+          instalacion.desco_serial,
+        ]),
+      ].filter((serial): serial is string => Boolean(serial?.trim()));
       setSeriesInstalaciones(series);
     } catch (err) {
       console.error(
         "Error cargando series de instalaciones para filtrar equipos",
         err,
       );
+      setSeriesError(
+        "No se pudieron verificar los seriales asignados a instalaciones. Intenta recargar la página.",
+      );
+    } finally {
+      setLoadingSeries(false);
     }
   };
 
   // Equipos en stock: los que NO tienen su serie en ninguna instalación
   // Normalizar quitando sufijos _DUPLI<n> que se generan al importar
+  const normalizeSerial = (serial: string) =>
+    serial.toLowerCase().trim().replace(/_dupli\d+$/i, "");
   const seriesInstalacionesSet = new Set(
-    seriesInstalaciones.map((s) =>
-      s.toLowerCase().trim().replace(/_dupli\d+$/i, '')
-    ),
+    seriesInstalaciones.map(normalizeSerial),
   );
 
   const stockEquipos = equipos.filter(
     (equipo) =>
       !equipo.numero_serie_equipo ||
-      !seriesInstalacionesSet.has(equipo.numero_serie_equipo.toLowerCase().trim()),
+      !seriesInstalacionesSet.has(normalizeSerial(equipo.numero_serie_equipo)),
   );
 
   const getOperadorId = (operador: Equipo["operador"]): number | null => {
@@ -503,13 +525,13 @@ export const EquiposPage: React.FC = () => {
 
       {!showForm && (
         <div className="overflow-hidden rounded border border-slate-200 bg-white shadow animate-fade-in">
-          {loading && (
+          {(loading || loadingSeries) && (
             <p className="p-4 text-sm text-slate-500">Cargando equipos...</p>
           )}
-          {error && !loading && (
-            <p className="p-4 text-sm text-red-500">{error}</p>
+          {(error || seriesError) && !loading && !loadingSeries && (
+            <p className="p-4 text-sm text-red-500">{error || seriesError}</p>
           )}
-          {!loading && !error && (
+          {!loading && !loadingSeries && !error && !seriesError && (
             <>
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-100">
