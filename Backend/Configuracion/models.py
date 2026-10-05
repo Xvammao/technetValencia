@@ -58,6 +58,26 @@ class InstalacionesMasOrange(models.Model):
         return f"{self.id}-{self.ot}-{self.operador}"
 
 
+class DetalleInstalacionMasOrange(models.Model):
+    id = models.AutoField(primary_key=True)
+    instalacion = models.OneToOneField(
+        InstalacionesMasOrange,
+        on_delete=models.CASCADE,
+        db_column='instalacion_id',
+        related_name='detalle',
+        db_constraint=False,
+    )
+    equipo_serial = models.CharField(max_length=100, blank=True, default='')
+    desco = models.BooleanField(default=False)
+    desco_serial = models.CharField(max_length=100, blank=True, default='')
+    tarjetas_sim = models.BooleanField(default=False)
+    seriales_tarjetas_sim = models.JSONField(default=list, blank=True)
+    acometida_id = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'detalle_instalaciones_masorange'
+
+
 class Acometidas(models.Model):
     id = models.AutoField(primary_key=True)
     acometida = models.TextField()
