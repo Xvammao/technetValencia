@@ -2,6 +2,7 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import { Dashboard } from './pages/Dashboard';
 import { EquiposPage } from './pages/EquiposPage';
 import { InstalacionesPage } from './pages/InstalacionesPage';
+import { InstalacionesMasOrangePage } from './pages/InstalacionesMasOrangePage';
 import { OperadoresPage } from './pages/OperadoresPage';
 import { OrdenesPage } from './pages/OrdenesPage';
 import { TecnicosPage } from './pages/TecnicosPage';
@@ -34,6 +35,14 @@ function App() {
         element={(
           <PrivateRoute>
             <InstalacionesPage />
+          </PrivateRoute>
+        )}
+      />
+      <Route
+        path="/instalaciones-masorange"
+        element={(
+          <PrivateRoute>
+            <InstalacionesMasOrangePage />
           </PrivateRoute>
         )}
       />

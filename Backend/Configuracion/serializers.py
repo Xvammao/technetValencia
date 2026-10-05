@@ -12,6 +12,12 @@ class InstalacionesSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class InstalacionesMasOrangeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.InstalacionesMasOrange
+        fields = '__all__'
+
+
 class OperadorSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Operador
@@ -28,4 +34,3 @@ class TecnicosSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Tecnicos
         fields = '__all__'
-

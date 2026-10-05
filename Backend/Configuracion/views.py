@@ -93,6 +93,17 @@ class InstalacionesRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIVi
             'data': response.data
         }, status=status.HTTP_200_OK)
 
+
+class InstalacionesMasOrangeListCreateView(generics.ListCreateAPIView):
+    queryset = models.InstalacionesMasOrange.objects.all()
+    serializer_class = serializers.InstalacionesMasOrangeSerializer
+
+
+class InstalacionesMasOrangeRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = models.InstalacionesMasOrange.objects.all()
+    serializer_class = serializers.InstalacionesMasOrangeSerializer
+
+
 # operador
 
 class OperadorListCreateView(generics.ListCreateAPIView):

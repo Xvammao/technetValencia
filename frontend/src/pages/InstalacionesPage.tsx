@@ -42,7 +42,15 @@ interface Tecnico {
   id_tecnico_empresa: string;
 }
 
-export const InstalacionesPage: React.FC = () => {
+interface InstalacionesPageProps {
+  endpoint?: string;
+  title?: string;
+}
+
+export const InstalacionesPage: React.FC<InstalacionesPageProps> = ({
+  endpoint = "/instalaciones/",
+  title = "Instalaciones",
+}) => {
   const [instalaciones, setInstalaciones] = useState<Instalacion[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -97,7 +105,7 @@ export const InstalacionesPage: React.FC = () => {
     setError(null);
 
     try {
-      const response = await api.get("/instalaciones/");
+      const response = await api.get(endpoint);
 
       const data = (response.data?.results ?? response.data) as Instalacion[];
 
@@ -203,8 +211,11 @@ export const InstalacionesPage: React.FC = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Instalaciones");
-    XLSX.writeFile(workbook, "instalaciones.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, title.slice(0, 31));
+    XLSX.writeFile(
+      workbook,
+      `${title.toLowerCase().replace(/\s+/g, "-")}.xlsx`,
+    );
   };
 
   const loadOrdenes = async () => {
@@ -276,7 +287,7 @@ export const InstalacionesPage: React.FC = () => {
       return;
 
     try {
-      await api.delete(`/instalaciones/${inst.id_instalaciones}/`);
+      await api.delete(`${endpoint}${inst.id_instalaciones}/`);
 
       await loadInstalaciones();
     } catch (err) {
@@ -486,7 +497,7 @@ export const InstalacionesPage: React.FC = () => {
         }
 
         try {
-          await api.post("/instalaciones/", {
+          await api.post(endpoint, {
             numero_serie_equipo: numSerie,
 
             numero_de_orden: numeroDeOrden,
@@ -578,9 +589,9 @@ export const InstalacionesPage: React.FC = () => {
       };
 
       if (editing) {
-        await api.put(`/instalaciones/${editing.id_instalaciones}/`, payload);
+        await api.put(`${endpoint}${editing.id_instalaciones}/`, payload);
       } else {
-        await api.post("/instalaciones/", payload);
+        await api.post(endpoint, payload);
       }
 
       setSerie("");
@@ -697,7 +708,7 @@ export const InstalacionesPage: React.FC = () => {
   return (
     <div className="p-4 animate-fade-in space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-semibold">Instalaciones</h1>
+        <h1 className="text-2xl font-semibold">{title}</h1>
 
         {!showForm && (
           <div className="flex flex-1 flex-col gap-2 md:flex-row md:items-center md:justify-end">

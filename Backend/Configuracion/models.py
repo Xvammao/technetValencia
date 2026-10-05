@@ -42,6 +42,24 @@ class Instalaciones(models.Model):
         return f"{self.id_instalaciones}-{self.numero_serie_equipo}-{self.numero_de_orden}"
 
 
+class InstalacionesMasOrange(models.Model):
+    id_instalaciones = models.AutoField(primary_key=True)
+    numero_serie_equipo = models.CharField(unique=True, max_length=100)
+    numero_de_orden = models.CharField(max_length=100)
+    fecha_cierre = models.DateField(blank=True, null=True)
+    id_tecnico_empresa = models.CharField(max_length=50)
+    nombre_tecnico = models.CharField(max_length=150)
+    descripcion = models.TextField(blank=True, null=True)
+    tipo = models.CharField(max_length=100, blank=True, null=True)
+    tipo_orden = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        db_table = 'instalaciones_masorange'
+
+    def __str__(self):
+        return f"{self.id_instalaciones}-{self.numero_serie_equipo}-{self.numero_de_orden}"
+
+
 class Operador(models.Model):
     id_operador = models.AutoField(primary_key=True)
     nombre_operador = models.CharField(max_length=150)
