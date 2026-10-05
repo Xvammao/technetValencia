@@ -279,6 +279,8 @@ export const EquiposPage: React.FC = () => {
           normalizedRow["nombre"] ??
           normalizedRow["nombre equipo"] ??
           normalizedRow["producto"] ??
+          normalizedRow["part number"] ??
+          normalizedRow["partnumber"] ??
           ""
         )
           .toString()
@@ -295,6 +297,14 @@ export const EquiposPage: React.FC = () => {
           .toString()
           .trim();
 
+        const tecnico = (
+          normalizedRow["tecnico asignado"] ??
+          normalizedRow["tecnico"] ??
+          "stock"
+        )
+          .toString()
+          .trim() || "stock";
+
         if (!nombre || !serie) {
           continue;
         }
@@ -303,7 +313,7 @@ export const EquiposPage: React.FC = () => {
           await api.post("/equipos/", {
             nombre,
             numero_serie_equipo: serie,
-            tecnico: "stock",
+            tecnico,
             operador: Number(importOperadorId),
           });
           createdCount += 1;
@@ -317,7 +327,7 @@ export const EquiposPage: React.FC = () => {
 
       if (createdCount === 0) {
         setError(
-          'No se creó ningún equipo desde el Excel. Verifica que las columnas de nombre y número de serie tengan encabezados válidos (por ejemplo: "Nombre", "Num Serie").',
+          'No se creó ningún equipo desde el Excel. Verifica que incluya nombre (por ejemplo: "Nombre", "Producto" o "Part Number") y número de serie (por ejemplo: "Num Serie" o "Serie"). Si el archivo tiene "Técnico Asignado", ese valor se usará como técnico; si no, se asignará a stock.',
         );
       }
     } catch (err) {
