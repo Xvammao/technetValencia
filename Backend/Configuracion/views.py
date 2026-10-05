@@ -104,6 +104,16 @@ class InstalacionesMasOrangeRetrieveUpdateDestroyView(generics.RetrieveUpdateDes
     serializer_class = serializers.InstalacionesMasOrangeSerializer
 
 
+class AcometidasListCreateView(generics.ListCreateAPIView):
+    queryset = models.Acometidas.objects.all()
+    serializer_class = serializers.AcometidasSerializer
+
+
+class AcometidasRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = models.Acometidas.objects.all()
+    serializer_class = serializers.AcometidasSerializer
+
+
 # operador
 
 class OperadorListCreateView(generics.ListCreateAPIView):

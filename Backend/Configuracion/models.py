@@ -43,21 +43,33 @@ class Instalaciones(models.Model):
 
 
 class InstalacionesMasOrange(models.Model):
-    id_instalaciones = models.AutoField(primary_key=True)
-    numero_serie_equipo = models.CharField(unique=True, max_length=100)
-    numero_de_orden = models.CharField(max_length=100)
+    id = models.AutoField(primary_key=True)
+    ot = models.CharField(max_length=100)
+    operador = models.CharField(max_length=150)
+    tipo = models.CharField(max_length=100)
     fecha_cierre = models.DateField(blank=True, null=True)
-    id_tecnico_empresa = models.CharField(max_length=50)
-    nombre_tecnico = models.CharField(max_length=150)
-    descripcion = models.TextField(blank=True, null=True)
-    tipo = models.CharField(max_length=100, blank=True, null=True)
-    tipo_orden = models.CharField(max_length=100, blank=True, null=True)
+    tecnico_asignado = models.CharField(max_length=150)
 
     class Meta:
+        managed = False
         db_table = 'instalaciones_masorange'
 
     def __str__(self):
-        return f"{self.id_instalaciones}-{self.numero_serie_equipo}-{self.numero_de_orden}"
+        return f"{self.id}-{self.ot}-{self.operador}"
+
+
+class Acometidas(models.Model):
+    id = models.AutoField(primary_key=True)
+    acometida = models.TextField()
+    valor_tecnico = models.TextField(blank=True, null=True)
+    valor_empresa = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'acometidas'
+
+    def __str__(self):
+        return f"{self.id}-{self.acometida}"
 
 
 class Operador(models.Model):

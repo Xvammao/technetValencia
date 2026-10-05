@@ -5,6 +5,7 @@ const navItems = [
   { to: '/equipos', label: 'Equipos' },
   { to: '/instalaciones', label: 'Instalaciones' },
   { to: '/instalaciones-masorange', label: 'Instalaciones MasOrange' },
+  { to: '/axcometidas', label: 'Axcometidas' },
   { to: '/operadores', label: 'Operadores' },
   { to: '/ordenes', label: 'Órdenes' },
   { to: '/tecnicos', label: 'Técnicos' },

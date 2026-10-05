@@ -8,21 +8,37 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='InstalacionesMasOrange',
-            fields=[
-                ('id_instalaciones', models.AutoField(primary_key=True, serialize=False)),
-                ('numero_serie_equipo', models.CharField(max_length=100, unique=True)),
-                ('numero_de_orden', models.CharField(max_length=100)),
-                ('fecha_cierre', models.DateField(blank=True, null=True)),
-                ('id_tecnico_empresa', models.CharField(max_length=50)),
-                ('nombre_tecnico', models.CharField(max_length=150)),
-                ('descripcion', models.TextField(blank=True, null=True)),
-                ('tipo', models.CharField(blank=True, max_length=100, null=True)),
-                ('tipo_orden', models.CharField(blank=True, max_length=100, null=True)),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.CreateModel(
+                    name='InstalacionesMasOrange',
+                    fields=[
+                        ('id', models.AutoField(primary_key=True, serialize=False)),
+                        ('ot', models.CharField(max_length=100)),
+                        ('operador', models.CharField(max_length=150)),
+                        ('tipo', models.CharField(max_length=100)),
+                        ('fecha_cierre', models.DateField(blank=True, null=True)),
+                        ('tecnico_asignado', models.CharField(max_length=150)),
+                    ],
+                    options={
+                        'db_table': 'instalaciones_masorange',
+                        'managed': False,
+                    },
+                ),
+                migrations.CreateModel(
+                    name='Acometidas',
+                    fields=[
+                        ('id', models.AutoField(primary_key=True, serialize=False)),
+                        ('acometida', models.TextField()),
+                        ('valor_tecnico', models.TextField(blank=True, null=True)),
+                        ('valor_empresa', models.TextField(blank=True, null=True)),
+                    ],
+                    options={
+                        'db_table': 'acometidas',
+                        'managed': False,
+                    },
+                ),
             ],
-            options={
-                'db_table': 'instalaciones_masorange',
-            },
         ),
     ]

@@ -3,6 +3,7 @@ import { Dashboard } from './pages/Dashboard';
 import { EquiposPage } from './pages/EquiposPage';
 import { InstalacionesPage } from './pages/InstalacionesPage';
 import { InstalacionesMasOrangePage } from './pages/InstalacionesMasOrangePage';
+import { AxcometidasPage } from './pages/AxcometidasPage';
 import { OperadoresPage } from './pages/OperadoresPage';
 import { OrdenesPage } from './pages/OrdenesPage';
 import { TecnicosPage } from './pages/TecnicosPage';
@@ -43,6 +44,14 @@ function App() {
         element={(
           <PrivateRoute>
             <InstalacionesMasOrangePage />
+          </PrivateRoute>
+        )}
+      />
+      <Route
+        path="/axcometidas"
+        element={(
+          <PrivateRoute>
+            <AxcometidasPage />
           </PrivateRoute>
         )}
       />
