@@ -34,6 +34,7 @@ export const EquiposPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [importing, setImporting] = useState(false);
   const [search, setSearch] = useState("");
+  const [filtroOperadorId, setFiltroOperadorId] = useState("");
   const [seriesInstalaciones, setSeriesInstalaciones] = useState<string[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [formTecnico, setFormTecnico] = useState("");
@@ -110,8 +111,26 @@ export const EquiposPage: React.FC = () => {
       !seriesInstalacionesSet.has(equipo.numero_serie_equipo.toLowerCase().trim()),
   );
 
+  const getOperadorId = (operador: Equipo["operador"]): number | null => {
+    if (typeof operador === "number") return operador;
+    if (typeof operador === "string" && operador.trim()) {
+      const parsed = Number(operador);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+    if (operador && typeof operador === "object") {
+      return operador.id_operador;
+    }
+    return null;
+  };
+
   // stockEquipos + filtro de búsqueda de texto para la tabla
   const filteredEquipos = stockEquipos.filter((equipo) => {
+    if (
+      filtroOperadorId &&
+      String(getOperadorId(equipo.operador) ?? "") !== filtroOperadorId
+    ) {
+      return false;
+    }
     if (!search.trim()) return true;
     const term = search.toLowerCase();
 
@@ -426,6 +445,22 @@ export const EquiposPage: React.FC = () => {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full max-w-xs rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
+            <select
+              aria-label="Filtrar equipos por operador"
+              value={filtroOperadorId}
+              onChange={(e) => {
+                setFiltroOperadorId(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full max-w-xs rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="">Todos los operadores</option>
+              {operadores.map((operador) => (
+                <option key={operador.id_operador} value={operador.id_operador}>
+                  {operador.nombre_operador}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               onClick={handleExportExcel}
