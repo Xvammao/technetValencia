@@ -75,6 +75,13 @@ interface TecnicoTotal {
   ordenes: number;
 }
 
+interface TecnicoDiaTotal {
+  nombre: string;
+  ordenes: number;
+  valorTecnico: number;
+  valorEmpresa: number;
+}
+
 interface MesTotal {
   key: string;
   label: string;
@@ -84,6 +91,13 @@ interface MesTotal {
 const currentYearMonth = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+};
+
+const currentDate = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate(),
+  ).padStart(2, "0")}`;
 };
 
 const getList = <T,>(response: {
@@ -111,6 +125,12 @@ const monthKey = (date: string | null) => {
   if (!date) return "";
   const match = date.match(/^(\d{4})-(\d{2})/);
   return match ? `${match[1]}-${match[2]}` : "";
+};
+
+const dayKey = (date: string | null) => {
+  if (!date) return "";
+  const match = date.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match?.[1] ?? "";
 };
 
 const formatCurrency = (amount: number) =>
@@ -145,6 +165,7 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [monthFilter, setMonthFilter] = useState(currentYearMonth());
+  const [dayFilter, setDayFilter] = useState(currentDate());
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -224,6 +245,12 @@ export const Dashboard: React.FC = () => {
     const masOrangeThisMonth = data.masOrange.filter((item) =>
       matchesSelectedMonth(item.fecha_cierre),
     );
+    const legacyThisDay = data.instalaciones.filter(
+      (item) => dayKey(item.fecha_cierre) === dayFilter,
+    );
+    const masOrangeThisDay = data.masOrange.filter(
+      (item) => dayKey(item.fecha_cierre) === dayFilter,
+    );
 
     let monthlyTeamValue = 0;
     let monthlyCompanyValue = 0;
@@ -273,6 +300,58 @@ export const Dashboard: React.FC = () => {
     );
     monthlyTeamValue += monthlyAcometidas.tecnico;
     monthlyCompanyValue += monthlyAcometidas.empresa;
+
+    const dailyTechnicianMap = new Map<string, TecnicoDiaTotal>();
+    const addDailyTotal = (
+      name: string,
+      technicianAmount: number,
+      companyAmount: number,
+    ) => {
+      const current = dailyTechnicianMap.get(name) ?? {
+        nombre: name,
+        ordenes: 0,
+        valorTecnico: 0,
+        valorEmpresa: 0,
+      };
+      current.ordenes += 1;
+      current.valorTecnico += technicianAmount;
+      current.valorEmpresa += companyAmount;
+      dailyTechnicianMap.set(name, current);
+    };
+
+    legacyThisDay.forEach((item) => {
+      const order = item.tipo_orden
+        ? ordenesByType.get(item.tipo_orden.trim().toLowerCase())
+        : undefined;
+      addDailyTotal(
+        item.nombre_tecnico?.trim() || "Sin técnico asignado",
+        parseAmount(order?.valor_orden_tecnico),
+        parseAmount(order?.valor_orden_empresa),
+      );
+    });
+    masOrangeThisDay.forEach((item) => {
+      const acometida = item.acometida_id
+        ? acometidasById.get(item.acometida_id)
+        : undefined;
+      addDailyTotal(
+        item.tecnico_asignado?.trim() || "Sin técnico asignado",
+        parseAmount(acometida?.valor_tecnico),
+        parseAmount(acometida?.valor_empresa),
+      );
+    });
+    const dailyTechnicianTotals = [...dailyTechnicianMap.values()].sort(
+      (a, b) =>
+        b.ordenes - a.ordenes ||
+        b.valorTecnico + b.valorEmpresa - (a.valorTecnico + a.valorEmpresa),
+    );
+    const dailyTotals = dailyTechnicianTotals.reduce(
+      (totals, technician) => ({
+        ordenes: totals.ordenes + technician.ordenes,
+        valorTecnico: totals.valorTecnico + technician.valorTecnico,
+        valorEmpresa: totals.valorEmpresa + technician.valorEmpresa,
+      }),
+      { ordenes: 0, valorTecnico: 0, valorEmpresa: 0 },
+    );
 
     const operatorTotals = new Map<string, number>();
     masOrangeThisMonth.forEach((item) => {
@@ -343,6 +422,9 @@ export const Dashboard: React.FC = () => {
       selectedMonthLabel: getMonthLabel(monthFilter),
       legacyThisMonth: legacyThisMonth.length,
       masOrangeThisMonth: masOrangeThisMonth.length,
+      dailyTechnicianTotals,
+      dailyTotals,
+      selectedDayLabel: formatDate(dayFilter),
       monthlyTeamValue,
       monthlyCompanyValue,
       lastSixMonths,
@@ -354,7 +436,7 @@ export const Dashboard: React.FC = () => {
       operatorCount: data.operadores.length,
       technicianCount: data.tecnicos.length,
     };
-  }, [data, monthFilter]);
+  }, [data, monthFilter, dayFilter]);
 
   return (
     <main className="space-y-6 p-4 pb-8 animate-fade-in sm:p-6">
@@ -543,6 +625,112 @@ export const Dashboard: React.FC = () => {
             las acometidas asociadas a las instalaciones del mes seleccionado.
           </p>
         </div>
+      </section>
+
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Liquidación diaria
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-900">
+              Cierres e ingresos por técnico
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Suma Instalaciones e Instalaciones MasOrange para el día elegido.
+            </p>
+          </div>
+          <div>
+            <label
+              htmlFor="dashboard-day"
+              className="mb-1.5 block text-xs font-medium text-slate-600"
+            >
+              Día de análisis
+            </label>
+            <input
+              id="dashboard-day"
+              type="date"
+              value={dayFilter}
+              onChange={(event) => setDayFilter(event.target.value)}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-3 border-b border-slate-100 p-5 sm:grid-cols-3 sm:px-6">
+          <DailySummaryCard
+            label={`Órdenes cerradas · ${summary?.selectedDayLabel ?? "—"}`}
+            value={summary?.dailyTotals.ordenes ?? 0}
+            loading={loading}
+            tone="slate"
+          />
+          <DailySummaryCard
+            label="Total para técnicos"
+            value={summary?.dailyTotals.valorTecnico ?? 0}
+            loading={loading}
+            tone="emerald"
+            currency
+          />
+          <DailySummaryCard
+            label="Total para la empresa"
+            value={summary?.dailyTotals.valorEmpresa ?? 0}
+            loading={loading}
+            tone="blue"
+            currency
+          />
+        </div>
+
+        {loading ? (
+          <div className="p-5 sm:px-6">
+            <LoadingRows />
+          </div>
+        ) : summary?.dailyTechnicianTotals.length ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-5 py-3 font-semibold sm:px-6">Técnico</th>
+                  <th className="px-5 py-3 text-right font-semibold">
+                    Órdenes cerradas
+                  </th>
+                  <th className="px-5 py-3 text-right font-semibold">
+                    Valor técnico
+                  </th>
+                  <th className="px-5 py-3 text-right font-semibold sm:px-6">
+                    Valor empresa
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {summary.dailyTechnicianTotals.map((technician) => (
+                  <tr
+                    key={technician.nombre}
+                    className="transition hover:bg-slate-50/80"
+                  >
+                    <td className="whitespace-nowrap px-5 py-3.5 font-medium text-slate-800 sm:px-6">
+                      {technician.nombre}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3.5 text-right text-slate-600">
+                      {technician.ordenes}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3.5 text-right font-semibold text-emerald-700">
+                      {formatCurrency(technician.valorTecnico)}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3.5 text-right font-semibold text-blue-700 sm:px-6">
+                      {formatCurrency(technician.valorEmpresa)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState message="No hay órdenes cerradas para la fecha seleccionada." />
+        )}
+        <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-400 sm:px-6">
+          Cada instalación cerrada cuenta como una orden. Los importes se toman
+          del tipo de orden clásico o de los precios de acometida MasOrange.
+        </p>
       </section>
 
       <section className="grid gap-5 xl:grid-cols-2">
@@ -796,6 +984,33 @@ const ValueCard: React.FC<{
     </p>
   </div>
 );
+
+const DailySummaryCard: React.FC<{
+  label: string;
+  value: number;
+  loading: boolean;
+  tone: "slate" | "emerald" | "blue";
+  currency?: boolean;
+}> = ({ label, value, loading, tone, currency = false }) => {
+  const styles = {
+    slate: "bg-slate-50 text-slate-700",
+    emerald: "bg-emerald-50 text-emerald-700",
+    blue: "bg-blue-50 text-blue-700",
+  };
+
+  return (
+    <div className={`rounded-2xl p-4 ${styles[tone]}`}>
+      <p className="text-xs font-medium">{label}</p>
+      <p className="mt-1.5 text-xl font-bold text-slate-900">
+        {loading
+          ? "—"
+          : currency
+            ? formatCurrency(value)
+            : value.toLocaleString("es-ES")}
+      </p>
+    </div>
+  );
+};
 
 const QuickLink: React.FC<{ to: string; label: string }> = ({ to, label }) => (
   <Link

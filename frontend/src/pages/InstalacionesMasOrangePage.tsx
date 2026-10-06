@@ -45,12 +45,23 @@ const getCell = (row: Record<string, unknown>, names: string[]) => {
   return header ? String(row[header] ?? "").trim() : "";
 };
 
-const parseDate = (value: string): string | null => {
-  if (!value) return null;
+const getRawCell = (row: Record<string, unknown>, names: string[]) => {
+  const acceptedHeaders = new Set(names.map(normalizeHeader));
+  const header = Object.keys(row).find((key) =>
+    acceptedHeaders.has(normalizeHeader(key)),
+  );
+  return header ? row[header] : undefined;
+};
 
-  const excelSerial = Number(value);
-  if (Number.isInteger(excelSerial) && excelSerial > 20000 && excelSerial < 80000) {
-    const parsed = XLSX.SSF.parse_date_code(excelSerial);
+const parseDate = (value: unknown): string | null => {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, "0")}-${String(
+      value.getUTCDate(),
+    ).padStart(2, "0")}`;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value) && value > 0 && value < 80000) {
+    const parsed = XLSX.SSF.parse_date_code(value);
     if (parsed) {
       return `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(
         parsed.d,
@@ -58,14 +69,54 @@ const parseDate = (value: string): string | null => {
     }
   }
 
-  const dayFirst = value.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (dayFirst) {
-    const [, day, month, year] = dayFirst;
-    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+
+  if (/^\d+(?:\.\d+)?$/.test(text)) {
+    const excelSerial = Number(text);
+    if (excelSerial > 0 && excelSerial < 80000) {
+      const parsed = XLSX.SSF.parse_date_code(excelSerial);
+      if (parsed) {
+        return `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(
+          parsed.d,
+        ).padStart(2, "0")}`;
+      }
+    }
   }
 
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+  const isoDate = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoDate) {
+    const [, year, month, day] = isoDate;
+    const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+    if (
+      parsed.getUTCFullYear() === Number(year) &&
+      parsed.getUTCMonth() + 1 === Number(month) &&
+      parsed.getUTCDate() === Number(day)
+    ) {
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+    return null;
+  }
+
+  const dayFirst = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})$/);
+  if (dayFirst) {
+    const [, day, month, rawYear] = dayFirst;
+    const year =
+      rawYear.length === 2
+        ? `${Number(rawYear) >= 50 ? "19" : "20"}${rawYear}`
+        : rawYear;
+    const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+    if (
+      parsed.getUTCFullYear() === Number(year) &&
+      parsed.getUTCMonth() + 1 === Number(month) &&
+      parsed.getUTCDate() === Number(day)
+    ) {
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+    return null;
+  }
+
+  return null;
 };
 
 export const InstalacionesMasOrangePage: React.FC = () => {
@@ -329,7 +380,7 @@ export const InstalacionesMasOrangePage: React.FC = () => {
 
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
         firstSheet,
-        { defval: "", raw: false },
+        { defval: "", raw: true },
       );
       if (rows.length === 0) {
         throw new Error("La primera hoja no contiene registros.");
@@ -341,7 +392,12 @@ export const InstalacionesMasOrangePage: React.FC = () => {
         const ot = getCell(row, ["ot"]);
         const operador = getCell(row, ["operador"]);
         const tipo = getCell(row, ["tipo"]);
-        const rawDate = getCell(row, ["fecha_cierre", "fecha cierre"]);
+        const rawDate = getRawCell(row, [
+          "fecha_cierre",
+          "fecha cierre",
+          "fecha de cierre",
+          "fecha",
+        ]);
         const tecnicoAsignado = getCell(row, [
           "tecnico_asignado",
           "tecnico asignado",
@@ -354,7 +410,7 @@ export const InstalacionesMasOrangePage: React.FC = () => {
           );
           continue;
         }
-        if (rawDate && !fechaCierre) {
+        if (String(rawDate ?? "").trim() && !fechaCierre) {
           rowErrors.push(`Fila ${index + 2}: la fecha de cierre no es válida.`);
           continue;
         }
